@@ -1,0 +1,13 @@
+font.family: serif
+font.size: 8
+axes.labelsize: 8
+xtick.labelsize: 7
+ytick.labelsize: 7
+legend.fontsize: 7
+figure.figsize: 3.25, 2.2
+savefig.dpi: 300
+savefig.bbox: tight
+savefig.transparent: True
+axes.spines.top: False
+axes.spines.right: False
+axes.prop_cycle: cycler('color', [(0.2471, 0.1294, 0.7137)])

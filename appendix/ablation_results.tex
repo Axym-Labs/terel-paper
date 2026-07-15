@@ -1,0 +1,33 @@
+% Ablation result tables moved from the main text.
+\section{Ablation results and run specifications}
+\label{app:ablation-results}
+
+This section reports additional ablation metrics and summarizes the configuration changes for each run (see the repository artifacts \texttt{terel\_ablation\_results.csv} and \texttt{terel\_ablation\_run\_specs.md}).
+
+\begin{table}[h]
+\caption{Ablation results}
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrr}
+\toprule
+\textbf{Description} & \textbf{Validation accuracy} & \textbf{Validation error} \\
+\midrule
+TeReL reference setup & 0.9691 & 0.0309 \\
+Head uses only last hidden layer & 0.9633 & 0.0367 \\
+Trace activation enabled & 0.9542 & 0.0458 \\
+One-step shifted lateral signal & 0.9165 & 0.0835 \\
+Trace with faster decay & 0.9711 & 0.0289 \\
+Lateral shift + shifted covariance target & 0.9518 & 0.0482 \\
+Trace fast + lateral shift + fast covariance & 0.9336 & 0.0664 \\
+Trace + lateral shift + last-layer head & 0.9120 & 0.0880 \\
+TeReL-S reference setup & 0.9658 & 0.0342 \\
+Shift + shifted covariance target + last-layer head & 0.9289 & 0.0711 \\
+Trace fast + shift + shifted covariance target + last-layer head & 0.9204 & 0.0796 \\
+\bottomrule
+
+\end{tabular}
+}
+\label{tab:ablation-results}
+\end{table}
+
+% Naming legend removed (table uses descriptive labels; run-spec details remain in repository artifacts).

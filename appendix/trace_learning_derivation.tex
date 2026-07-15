@@ -1,0 +1,37 @@
+% Trace learning vs. TeReL temporal-coherence: detailed algebra (moved from main text)
+\section{Trace learning vs.\ TeReL temporal-coherence: algebraic comparison}
+\label{app:trace-terel-derivation}
+
+This appendix section provides the detailed derivation supporting Proposition~\ref{prop:trace-incompatibility}.
+
+\paragraph{TeReL temporal coherence.}
+Starting from the temporal-coherence term (for neuron $j$ at time $t$)
+\begin{equation}
+L_{S,t,j} = (z_{t,j}-z_{t-1,j})^2,
+\end{equation}
+the gradient contribution for a weight $w_{k j}$ into neuron $j$ is
+\begin{align}
+\Delta w_{k j} &\propto -\frac{\partial L_{S,t,j}}{\partial w_{k j}}
+= -\frac{\partial L_{S,t,j}}{\partial z_{t,j}}
+\frac{\partial z_{t,j}}{\partial a_{t,j}}
+\frac{\partial a_{t,j}}{\partial w_{k j}} \\
+&= 2(z_{t-1,j}-z_{t,j}) \, \phi'(a_{t,j}) \, x_k,
+\end{align}
+where $a_{t,j}$ is the pre-activation and $z_{t,j}=\phi(a_{t,j})$.
+
+\paragraph{Trace learning.}
+In F\"oldi\'ak-style trace learning, the update is of the form
+\begin{equation}
+\Delta w_{k j} = \alpha\,\bar z_{t,j}\,(x_k - w_{k j}),
+\end{equation}
+with an activation trace $\bar z$ maintained as an exponential moving average
+\begin{equation}
+\bar z_{t,j} \leftarrow \beta\,\bar z_{t-1,j} + (1-\beta)\,z_{t,j}, \qquad \beta\in(0,1).
+\end{equation}
+Ignoring the weight-decay term (the $-\,\alpha\,\bar z\,w$ component), this yields an update proportional to
+\begin{equation}
+\Delta w_{k j} \propto x_k\,(\beta\,\bar z_{t-1,j} + (1-\beta)\,z_{t,j}).
+\end{equation}
+
+\paragraph{Why they cannot be made identical by choosing $\beta$.}
+TeReL's temporal-coherence update is proportional to $x_k\,(z_{t-1,j}-z_{t,j})$ (up to $\phi'(a)$), i.e.\ it requires coefficients $(+1,-1)$ on $(z_{t-1,j},z_{t,j})$. A single-parameter EMA trace produces coefficients $(\beta,\,1-\beta)$ on $(\bar z_{t-1,j},z_{t,j})$, and even if one informally identifies $\bar z_{t-1,j}$ with $z_{t-1,j}$, matching $(+1,-1)$ would require $\beta=1$ and $1-\beta=-1$ simultaneously, which is impossible.

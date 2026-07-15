@@ -1,0 +1,14 @@
+% Hyperparameter guidance moved from the main experiments section.
+\section{Guidance for choosing hyperparameters}
+\label{app:hyperparam-guidance}
+
+This section summarizes practical guidance for selecting TeReL hyperparameters based on our ablations.
+
+\paragraph{Choice of loss coefficients and learning rate.}
+In the general case, $\lambda_S+\lambda_C<\lambda_V$ prevents collapse, since both similarity and covariance penalize the magnitude of the activation.
+The main move in terms of parameter tuning is to change the variance loss for some situations:
+\begin{itemize}
+    \item If we detach the previous activation (as we do in the TeReL-S setup), experimentation has shown that doubling the variance coefficient is beneficial.
+    \item If we use batch normalization, we can quadruple the learning rate and halve the variance loss coefficient.
+    \item And if we use SGD, we double the variance loss coefficient.
+\end{itemize}

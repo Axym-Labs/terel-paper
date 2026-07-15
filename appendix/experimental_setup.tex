@@ -1,0 +1,27 @@
+% Experimental setup details moved from the main text to keep Section 4 slim.
+\section{Experimental setup details}
+\label{app:exp-setup}
+
+\noindent Table~\ref{tab:setup} summarizes the shared experimental settings used for the MNIST results reported in the main text.
+
+\begin{table}[h]
+
+\caption{Experimental Setup}
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Parameter} & \textbf{Applies to} & \textbf{Value} \\
+\midrule
+Epochs & All & 60 \\
+Activation Function & All & ReLU \\
+Seeds & TeReL(-S), backprop & 42 to 46 \\
+Optimizer & TeReL(-S), backprop & Adam \\
+Batch size & TeReL(-S), Backprop & 64 \\
+Neuron statistics & TeReL(-S) & In-Batch detached \\
+Chunk size & TeReL(-S) & 16 \\
+Covariance matrix implementation & TeReL(-S) & Lateral mapping \\
+\bottomrule
+\end{tabular}
+\label{tab:setup}\end{table}
+\FloatBarrier
+

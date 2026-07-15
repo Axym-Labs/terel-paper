@@ -1,0 +1,172 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{unified-publication}[2026/07/15 Open publication front-page experiment]
+
+\RequirePackage{xcolor}
+\RequirePackage{graphicx}
+\RequirePackage{hyperref}
+
+\ifdefined\PublicationUsePalatino
+  \RequirePackage{mathpazo}
+\fi
+
+% PRIMEarxiv fixes the body at 10pt even when article is loaded at 11pt. The
+% open-layout experiment restores a readable 11pt body and 10pt secondary text.
+\ifdefined\PublicationReadableType
+  \makeatletter
+  \renewcommand{\normalsize}{%
+    \@setfontsize\normalsize{11pt}{13.2pt}%
+    \abovedisplayskip 8pt plus 2pt minus 5pt
+    \abovedisplayshortskip 0pt plus 3pt
+    \belowdisplayskip \abovedisplayskip
+    \belowdisplayshortskip 5pt plus 3pt minus 3pt
+  }
+  \renewcommand{\small}{\@setfontsize\small{10pt}{12pt}}
+  \renewcommand{\footnotesize}{\@setfontsize\footnotesize{9pt}{11pt}}
+  \normalsize
+  \makeatother
+\fi
+
+% The reference paper uses 2.2cm side margins. On US letter this widens the
+% measure modestly while matching its page-relative whitespace.
+\ifdefined\PublicationWideMargins
+  \AtBeginDocument{%
+    \newgeometry{
+      left=2.2cm,
+      right=2.2cm,
+      textheight=9in,
+      top=1in,
+      headheight=14pt,
+      headsep=25pt,
+      footskip=30pt
+    }%
+  }
+\fi
+
+\definecolor{publicationaccent}{HTML}{3F21B6}
+\definecolor{publicationtitlecolor}{HTML}{003262}
+\definecolor{publicationink}{HTML}{111827}
+\definecolor{publicationmuted}{HTML}{4B5563}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=publicationaccent,
+  citecolor=publicationaccent,
+  urlcolor=publicationaccent
+}
+
+\newcommand{\publicationtitle}[1]{\def\PublicationTitleText{#1}}
+\newcommand{\publicationauthors}[1]{\def\PublicationAuthorsText{#1}}
+\newcommand{\publicationaffiliations}[1]{\def\PublicationAffiliationsText{#1}}
+\newcommand{\publicationdate}[1]{\def\PublicationDateText{#1}}
+\providecommand{\publicationhtmlinsertion}{}
+
+\newenvironment{publicationhead}{%
+  \begingroup
+  \ifdefined\HCode
+    \ifvmode\IgnorePar\fi\EndP
+    \HCode{<header class="publication-head">}%
+  \fi
+  \ifdefined\PublicationTwoRules
+    \ifdefined\HCode
+      \HCode{<div class="publication-title-block">}%
+    \else
+      \noindent{\color{publicationink}\rule{\linewidth}{1pt}}\par
+      \vspace{1.15em}%
+    \fi
+  \fi
+}{%
+  \ifdefined\HCode
+    \ifvmode\IgnorePar\fi\EndP
+    \HCode{</header>}\ShowPar
+  \fi
+  \par\endgroup
+}
+
+\newcommand{\makepublicationtitle}{%
+  \ifdefined\HCode
+    \ifvmode\IgnorePar\fi\EndP
+    \HCode{<h1 class="publication-title">}%
+    \PublicationTitleText
+    \HCode{</h1><p class="publication-authors">}%
+    \PublicationAuthorsText
+    \HCode{</p><p class="publication-affiliations">}%
+    \PublicationAffiliationsText
+    \HCode{</p>}%
+    \ifx\PublicationDateText\empty\else
+      \HCode{<p class="publication-date">}%
+      \PublicationDateText
+      \HCode{</p>}%
+    \fi
+    \ShowPar
+  \else
+    \begin{flushleft}
+      {\fontsize{21pt}{23pt}\selectfont\bfseries
+       \color{publicationtitlecolor}\PublicationTitleText\par}
+      \vspace{0.8em}
+      {\fontsize{11pt}{15pt}\selectfont\bfseries
+       \color{publicationink}\PublicationAuthorsText\par}
+      \vspace{0.05em}
+      {\fontsize{10pt}{12pt}\selectfont
+       \color{publicationmuted}\PublicationAffiliationsText\par}
+      \ifx\PublicationDateText\empty\else
+        \vspace{0.1em}
+        {\fontsize{10pt}{12pt}\selectfont
+         \color{publicationmuted}\PublicationDateText\par}
+      \fi
+    \end{flushleft}
+  \fi
+  \ifdefined\PublicationTwoRules
+    \ifdefined\HCode
+      \ifvmode\IgnorePar\fi\EndP
+      \HCode{</div>}\ShowPar
+    \else
+      \vspace{0.45em}
+      \noindent{\color{publicationink}\rule{\linewidth}{1pt}}\par
+    \fi
+  \fi
+}
+
+\newcommand{\publicationleadfigure}[3][0.25\textheight]{%
+  \par\vspace{1em}
+  \begin{center}
+    \includegraphics[width=\linewidth,height=#1,keepaspectratio]{#2}
+  \end{center}
+  \refstepcounter{figure}%
+  {\fontsize{10pt}{12pt}\selectfont
+   \noindent\textbf{Figure \thefigure:} #3\par}
+  \vspace{0.85em}
+}
+
+\newcommand{\publicationabstract}[1]{%
+  \par
+  \ifdefined\HCode
+    \ifvmode\IgnorePar\fi\EndP
+    \HCode{<section class="publication-abstract">}%
+  \fi
+  \ifdefined\HCode
+    \HCode{<h2 class="publication-abstract-heading">Abstract</h2>}%
+  \else
+    \begin{center}
+      {\fontsize{11pt}{13pt}\selectfont\bfseries Abstract\par}
+    \end{center}
+  \fi
+  \vspace{0.15em}
+  {\fontsize{10pt}{12pt}\selectfont #1\par}
+  \ifdefined\HCode
+    \ifvmode\IgnorePar\fi\EndP
+    \HCode{</section>}\ShowPar
+  \fi
+}
+
+\newcommand{\publicationlinks}[1]{%
+  \par\vspace{0.9em}
+  \ifdefined\HCode
+    \ifvmode\IgnorePar\fi\EndP
+    \HCode{<nav class="publication-links" aria-label="Publication links">}%
+  \fi
+  {\fontsize{10pt}{12pt}\selectfont\noindent #1\par}%
+  \ifdefined\HCode
+    \ifvmode\IgnorePar\fi\EndP
+    \HCode{</nav>}\ShowPar
+  \fi
+}
