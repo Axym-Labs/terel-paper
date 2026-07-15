@@ -98,9 +98,9 @@
 \publicationdate{}
 
 \providecommand{\LeadFigurePath}{figures/terel-lead.pdf}
-\providecommand{\LeadFigureMaxHeight}{0.26\textheight}
+\providecommand{\LeadFigureMaxHeight}{0.29\textheight}
 \providecommand{\LeadFigureCaption}{%
-\textbf{Left:} Laplacian-eigenmap projection of TeReL validation
+\textbf{Left:} Spectral projection of TeReL validation
 representations, colored by MNIST class. \textbf{Right:} validation accuracy
 for the $4\times2000$ setting. TeReL closes the gap to backpropagation to
 0.13 percentage points at this scale; Forward-Forward remains the strongest
@@ -114,7 +114,7 @@ reported comparison without matched uncertainty.}
 \makepublicationtitle
 \publicationleadfigure[\LeadFigureMaxHeight]{\LeadFigurePath}{\LeadFigureCaption}
 \publicationabstract{We introduce Temporal Regularized Learning (TeReL), a spatially and temporally local learning rule for self-supervised representation learning from sequential input streams. The key idea is to instantiate a VICReg-style objective with temporally adjacent positives and non-differentiated running population statistics, yielding a per-neuron online loss with bounded state. We also analyze how this perspective connects modern SSL objectives to classical temporal representation learning rules such as Slow Feature Analysis and trace learning.
-We present TeReL and a simplified variant, TeReL-S, and evaluate them on MNIST under controlled temporal orderings. Our method achieves competitive accuracy compared to backpropagation, Forward-Forward, and Equilibrium Propagation, while learning highly class-separable representations with rich first-layer receptive fields; TeReL-S attains similar performance despite its more restricted design. We further study a scoped recurrent setting on MNIST-Rows next-row prediction, comparing against a backpropagation-through-time baseline, and provide quantitative latent-trajectories.}
+We present TeReL and a simplified variant, TeReL-S, and evaluate them on MNIST under controlled temporal orderings. Our method achieves competitive accuracy compared to backpropagation, Forward-Forward, and Equilibrium Propagation, while learning highly class-separable representations with rich first-layer receptive fields; TeReL-S attains similar performance despite its more restricted design. We further study a scoped recurrent setting on MNIST-Rows next-row prediction, comparing against a backpropagation-through-time baseline, and provide quantitative latent trajectories.}
 \publicationlinks{%
   \textbf{Code:}\enspace
   \href{https://github.com/Axym-Labs/TeReL}{\nolinkurl{https://github.com/Axym-Labs/TeReL}}\\
