@@ -622,10 +622,10 @@ uv sync --extra test
 uv run pytest -q
 uv run python -m terel.resubmission.selection \
   --plan configs/resubmission/selection-plan.yaml ...
-uv run terel-resubmission --config <frozen-test-config.yaml> \
+uv run python -m terel.resubmission.confirmatory run \
   --manifest <manifest.json> --protocol <protocol.md> \
   --validation-ledger <validation-ledger.json> \
-  --repository . --allow-test --output <directory>
+  --repository . --allow-test --output <directory> --device cuda
 \end{verbatim}
 Absolute data and artifact roots in the executed plan are retained for
 provenance; the README gives portable equivalents.  Dataset files are not
