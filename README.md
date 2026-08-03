@@ -13,8 +13,11 @@ five-seed result records; no historical number is used as a fallback.
 Build the PDF with:
 
 ```bash
-tectonic main.tex
+SOURCE_DATE_EPOCH=1785715200 tectonic main.tex
 ```
+
+The fixed epoch makes the committed PDF byte-reproducible by removing build-time
+metadata variation.
 
 When present, `generated_results.tex` and
 `generated_appendix_results.tex` are included automatically. The generation
