@@ -52,7 +52,6 @@
 \newcommand{\TeReL}{\textsc{TeReL}}
 \newcommand{\stopgrad}{\operatorname{sg}}
 \newcommand{\offdiag}{\operatorname{offdiag}}
-\newcommand{\relu}{[\,\cdot\,]_+}
 
 \providecommand{\LeadFigurePath}{figures/terel-revision-overview.pdf}
 \providecommand{\LeadFigureMaxHeight}{0.35\textheight}
@@ -199,9 +198,11 @@ The minus sign in \cref{eq:variance} is essential.  With the gate
 $g_j=[\gamma-v_j]_+$ treated as state, minimizing $L_V$ pushes a currently
 active unit away from its mean until its running variance reaches $\gamma$.
 The term is a local gradient surrogate for a variance constraint; it is not the
-usual nonnegative VICReg scalar variance penalty.  Coherence alone can drive a
-ReLU network into an absorbing zero state, so the population-statistics rate is
-part of the algorithm rather than an inconsequential logging choice.
+usual nonnegative VICReg scalar variance penalty.  Coherence alone drove the
+original ReLU validation round into an absorbing zero state.  The confirmatory
+architecture therefore uses LeakyReLU with fixed negative slope 0.01, and the
+population-statistics rate remains part of the algorithm rather than an
+inconsequential logging choice.
 
 \subsection{Lateral decorrelation as a gradient proxy}
 
@@ -424,7 +425,8 @@ references.
 
 \subsection{Models, baselines, and readouts}
 
-The primary MLP is input$\rightarrow512\rightarrow256$, with ReLU and bias.
+The primary MLP is input$\rightarrow512\rightarrow256$, with LeakyReLU
+(negative slope 0.01) and bias.
 Every frozen representation uses the same linear last-layer probe.  A
 concatenated all-layer probe, when reported, is secondary and is applied to
 every compatible deep method.  Random uses the identical seed-specific
@@ -435,11 +437,14 @@ and IncSFA are objective-level classical baselines on PAMAP2.  Direct
 covariance, shuffled order, undetached time, and shifted lateral input are
 mechanism controls.
 
-Encoder selection is bounded to four preregistered configurations per dataset
-over three selection seeds (101, 202, 303).  It varies AdamW learning rate,
-$\lambda_V$, and $\lambda_C$ while fixing $\lambda_S=1$, statistics momentum
-0.9, and lateral momentum 0.99.  The state rates were fixed by validation-only
-collapse pilots before the sweep.  All representation methods share a
+Encoder selection uses three selection seeds (101, 202, 303).  The first four
+preregistered ReLU configurations all failed the unchanged variance-fidelity
+criterion on MNIST.  We retained that round, fixed LeakyReLU with slope 0.01,
+and repeated the same four configurations before test access; the cumulative
+eight remain below the protocol ceiling of twelve.  The grid varies AdamW
+learning rate, $\lambda_V$, and $\lambda_C$ while fixing $\lambda_S=1$,
+statistics momentum 0.9, and lateral momentum 0.99.  The state rates were fixed
+by validation-only collapse pilots before the sweep.  All representation methods share a
 30-epoch AdamW probe with the same batch size and learning rate.  The common
 encoder budget is 10 epochs; exceptions such as closed-form batch SFA report
 their own sample/pass counts and do not support efficiency claims.
@@ -520,8 +525,9 @@ The dense lateral operator is the largest conceptual cost.  It gives bounded
 history but $O(D^2)$ state and within-layer communication.  Sparse, low-rank,
 or learned approximations are future work and should be evaluated rather than
 assumed equivalent.  The anti-collapse term can fail if its running state
-responds too slowly, especially with ReLU's absorbing zero region; our fixed
-rate was selected by explicit collapse diagnostics.
+responds too slowly.  Our fixed state rate was selected by explicit collapse
+diagnostics, and the first complete ReLU validation round was rejected by the
+unchanged variance criterion before LeakyReLU was fixed for the second round.
 
 Our locality claim concerns credit assignment, not a complete biological
 model.  Standard optimizers, exact activation derivatives, synchronized matrix
