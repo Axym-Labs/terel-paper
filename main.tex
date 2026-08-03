@@ -54,10 +54,21 @@
 \newcommand{\offdiag}{\operatorname{offdiag}}
 \newcommand{\relu}{[\,\cdot\,]_+}
 
+\providecommand{\LeadFigurePath}{figures/terel-revision-overview.pdf}
+\providecommand{\LeadFigureMaxHeight}{0.35\textheight}
+\providecommand{\LeadFigureCaption}{%
+\textbf{A:} \TeReL{} cuts gradient paths across depth and time while each
+layer receives temporal, variance, and lateral signals; detached state is
+updated after the optimizer step. \textbf{B:} label-ordered MNIST is a
+label-assisted control, whereas chronological PAMAP2 with labels excluded from
+encoder batches tests natural self-supervised order. Both use a frozen linear
+probe and a manifest-locked test gate.}
+
 \begin{document}
 
 \begin{publicationhead}
 \makepublicationtitle
+\publicationleadfigure[\LeadFigureMaxHeight]{\LeadFigurePath}{\LeadFigureCaption}
 \publicationabstract{Temporal coherence is an attractive learning signal when
 credit assignment must remain within a layer, but slowness alone admits a
 collapsed solution.  We introduce Temporal Regularized Learning (\TeReL), a
