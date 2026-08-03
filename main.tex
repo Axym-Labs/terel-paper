@@ -452,8 +452,10 @@ $\lambda_S=1$, statistics momentum 0.9, and lateral momentum 0.99.  The state
 rates were fixed by validation-only collapse pilots before the sweep.  All
 representation methods share a
 30-epoch AdamW probe with the same batch size and learning rate.  The common
-encoder budget is 10 epochs; exceptions such as closed-form batch SFA report
-their own sample/pass counts and do not support efficiency claims.
+neural-encoder budget is 10 epochs.  Batch SFA uses its closed-form fit;
+IncSFA uses one official-algorithm online pass with all 52 available linear
+components.  Both report their own sample/pass counts and do not support
+efficiency claims against the neural methods.
 
 \subsection{Confirmatory analysis and test gate}
 
@@ -628,10 +630,12 @@ The public suite checks:
 \section{Reproducibility record}\label{app:reproducibility}
 
 The repository pins Python 3.12 and all direct dependencies in
-\texttt{pyproject.toml} and \texttt{uv.lock}.  The protocol, selection plan,
-validation ledger, confirmatory manifest, per-seed JSON records, raw confusion
-matrices, hardware/software record, and generated paper tables are checksum
-linked.  The core commands are:
+\texttt{pyproject.toml} and \texttt{uv.lock}.  Every run enables deterministic
+PyTorch algorithms, deterministic cuDNN behavior, and the prescribed cuBLAS
+workspace configuration.  The protocol, selection plan, validation ledger,
+confirmatory manifest, per-seed JSON records, raw confusion matrices,
+hardware/software record, and generated paper tables are checksum linked.  The
+core commands are:
 \begin{verbatim}
 uv sync --extra test
 uv run pytest -q
