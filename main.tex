@@ -438,13 +438,19 @@ covariance, shuffled order, undetached time, and shifted lateral input are
 mechanism controls.
 
 Encoder selection uses three selection seeds (101, 202, 303).  The first four
-preregistered ReLU configurations all failed the unchanged variance-fidelity
-criterion on MNIST.  We retained that round, fixed LeakyReLU with slope 0.01,
-and repeated the same four configurations before test access; the cumulative
-eight remain below the protocol ceiling of twelve.  The grid varies AdamW
-learning rate, $\lambda_V$, and $\lambda_C$ while fixing $\lambda_S=1$,
-statistics momentum 0.9, and lateral momentum 0.99.  The state rates were fixed
-by validation-only collapse pilots before the sweep.  All representation methods share a
+preregistered ReLU configurations all failed an absolute median-variance rule
+on MNIST.  We retained that round, fixed LeakyReLU with slope 0.01, and repeated
+the same four configurations before test access.  A frozen random-encoder
+control then exposed that the absolute rule confounded feature scale with
+collapse despite high effective rank and nearly all coordinates being active.
+The final non-collapse gate therefore requires, on every selection seed, mean
+variance at least 0.001, at least 25\% of coordinates above variance $10^{-4}$,
+and covariance effective rank at least 5.  This diagnostic revision changed no
+model result or grid entry, and all earlier ledgers are retained.  The grid
+varies AdamW learning rate, $\lambda_V$, and $\lambda_C$ while fixing
+$\lambda_S=1$, statistics momentum 0.9, and lateral momentum 0.99.  The state
+rates were fixed by validation-only collapse pilots before the sweep.  All
+representation methods share a
 30-epoch AdamW probe with the same batch size and learning rate.  The common
 encoder budget is 10 epochs; exceptions such as closed-form batch SFA report
 their own sample/pass counts and do not support efficiency claims.
@@ -527,7 +533,10 @@ or learned approximations are future work and should be evaluated rather than
 assumed equivalent.  The anti-collapse term can fail if its running state
 responds too slowly.  Our fixed state rate was selected by explicit collapse
 diagnostics, and the first complete ReLU validation round was rejected by the
-unchanged variance criterion before LeakyReLU was fixed for the second round.
+initial variance rule before LeakyReLU was fixed for the second round.  An
+explicit random-feature control then showed why scale, active fraction, and
+effective rank must be reported together rather than treating coordinate scale
+alone as collapse.
 
 Our locality claim concerns credit assignment, not a complete biological
 model.  Standard optimizers, exact activation derivatives, synchronized matrix
