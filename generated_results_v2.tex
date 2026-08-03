@@ -1,0 +1,31 @@
+\begin{table}[t]
+\centering
+\caption{Corrected MNIST test accuracy (\%, five seeds). All-layer readout access is matched across methods; TeReL last-layer access is a secondary audit. Values are mean $\pm$ sample SD.}
+\label{tab:corrected-mnist}
+\begin{tabular}{lc}
+\toprule
+Method & Accuracy \\
+\midrule
+\TeReL{} (all layers) & 97.30 $\pm$ 0.07 \\
+\TeReL{} (last layer) & 97.14 $\pm$ 0.10 \\
+\TeReL{}-S (all layers) & 96.29 $\pm$ 0.07 \\
+Random features (all layers) & 95.13 $\pm$ 0.27 \\
+Backpropagation (all layers) & 98.34 $\pm$ 0.08 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{Paired test-set accuracy differences in percentage points with percentile 95\% bootstrap intervals over seeds.}
+\label{tab:corrected-contrasts}
+\begin{tabular}{lc}
+\toprule
+Contrast & Difference [95\% interval] \\
+\midrule
+\TeReL{} $-$ BP & -1.04 [-1.07, -1.01] \\
+\TeReL{} $-$ random & 2.17 [2.00, 2.42] \\
+last $-$ all layers & -0.16 [-0.30, -0.02] \\
+\bottomrule
+\end{tabular}
+\end{table}

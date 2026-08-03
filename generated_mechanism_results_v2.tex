@@ -1,0 +1,17 @@
+\begin{table}[H]
+\centering
+\small
+\caption{Validation-only mechanism audit under the recovered canonical protocol (three paired seeds). Each intervention changes one factor. $\Delta$ is the accuracy difference from full \TeReL{} in percentage points.}
+\label{tab:mechanism-audit-v2}
+\begin{tabular}{lrrrr}
+\toprule
+Intervention & Accuracy (\%) & $\Delta$ & $r_{\mathrm{eff}}$ & Median var. \\
+\midrule
+Full \TeReL{} & 97.28 $\pm$ 0.12 & -- & 39.2 & 0.185 \\
+$\lambda_S=0$ & 89.10 $\pm$ 1.57 & -8.18 & 369.3 & 0.907 \\
+$\lambda_V=0$ & 66.13 $\pm$ 6.32 & -31.15 & 6.0 & 7.72e-05 \\
+$\lambda_C=0$ & 86.44 $\pm$ 0.41 & -10.84 & 2.8 & 0.916 \\
+Shuffled order & 89.73 $\pm$ 0.37 & -7.55 & 311.3 & 0.171 \\
+\bottomrule
+\end{tabular}
+\end{table}

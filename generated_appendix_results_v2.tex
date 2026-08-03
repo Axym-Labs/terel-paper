@@ -1,0 +1,47 @@
+\begin{table}[H]
+\centering
+\small
+\caption{Raw corrected MNIST test accuracies (\%) in seed order 1101, 1202, 1303, 1404, 1505.}
+\label{tab:corrected-raw}
+\begin{tabular}{ll}
+\toprule
+Method & Raw values \\
+\midrule
+\TeReL{} (all layers) & 97.30, 97.30, 97.21, 97.28, 97.41 \\
+\TeReL{} (last layer) & 97.14, 97.18, 97.28, 97.09, 97.01 \\
+\TeReL{}-S (all layers) & 96.35, 96.34, 96.32, 96.17, 96.26 \\
+Random features (all layers) & 94.66, 95.27, 95.12, 95.33, 95.27 \\
+Backpropagation (all layers) & 98.32, 98.32, 98.30, 98.28, 98.47 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Encoder-fit accounting averaged over five test seeds. Examples count sample presentations. MAC is the declared linear plus same-layer proxy, not a hardware energy measurement.}
+\label{tab:corrected-resources}
+\begin{tabular}{lrrrrr}
+\toprule
+Method & Examples (M) & Opt. steps & Seconds & Peak MiB & MAC (G) \\
+\midrule
+\TeReL{} (all layers) & 3.00 & 11760 & 107.6 & 76.7 & 3981.3 \\
+\TeReL{} (last layer) & 3.00 & 11760 & 107.7 & 76.7 & 3981.3 \\
+\TeReL{}-S (all layers) & 0.50 & 1960 & 27.4 & 77.7 & 1126.4 \\
+Backpropagation (all layers) & 3.00 & 11760 & 43.4 & 225.4 & 4815.4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Tuned samplewise streaming TeReL on the validation split (three seeds). The serial seed supplies time and memory accounting; concurrent repetition timings are excluded.}
+\label{tab:streaming-v2}
+\begin{tabular}{lccc}
+\toprule
+Accuracy (\%) & Effective rank & Median variance & Encoder seconds \\
+\midrule
+95.14 $\pm$ 0.04 & 112.8 & 0.378 & 1305.2 \\
+\bottomrule
+\end{tabular}
+\end{table}
