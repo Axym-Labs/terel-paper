@@ -21,5 +21,16 @@ When present, `generated_results.tex` and
 command and provenance requirements are documented in the companion
 [code repository](https://github.com/Axym-Labs/TeReL).
 
+Regenerate the paired-effects figure from the analysis JSON with:
+
+```bash
+python figures/confirmatory-paired-effects.py /path/to/confirmatory-analysis.json
+```
+
+The committed PDF and generated tables correspond to the frozen 60-run
+confirmatory matrix. The corrected evidence supports a local soft-SFA
+mechanism and a repeatable MNIST class-geometry change, but not an accuracy
+advantage over random features or a PAMAP2 benefit from chronological order.
+
 - [Project page](https://axym.org/work/terel)
 - [Code](https://github.com/Axym-Labs/TeReL)

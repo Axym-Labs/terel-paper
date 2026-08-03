@@ -1,0 +1,49 @@
+\begin{table}[H]
+\centering
+\caption{MNIST test accuracy across five seeds. Values are mean $\pm$ sample SD and percentile 95\% bootstrap interval.}
+\label{tab:mnist-confirmatory}
+\begin{tabular}{lc}
+\toprule
+Method & Mean $\pm$ SD [95\% CI] \\
+\midrule
+\TeReL{}-local & 0.886 $\pm$ 0.006 [0.882, 0.890] \\
+Random & 0.890 $\pm$ 0.005 [0.886, 0.894] \\
+Local SupCon & 0.944 $\pm$ 0.002 [0.942, 0.945] \\
+Direct covariance & 0.916 $\pm$ 0.001 [0.915, 0.916] \\
+Supervised BP & 0.978 $\pm$ 0.001 [0.977, 0.979] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{PAMAP2 test macro-F1 across five seeds. Values are mean $\pm$ sample SD and percentile 95\% bootstrap interval.}
+\label{tab:pamap2-confirmatory}
+\begin{tabular}{lc}
+\toprule
+Method & Mean $\pm$ SD [95\% CI] \\
+\midrule
+\TeReL{}-ordered & 0.307 $\pm$ 0.066 [0.260, 0.360] \\
+\TeReL{}-shuffled & 0.312 $\pm$ 0.026 [0.290, 0.330] \\
+Random & 0.322 $\pm$ 0.039 [0.296, 0.355] \\
+Batch SFA & 0.185 $\pm$ 0.002 [0.184, 0.186] \\
+IncSFA & 0.218 $\pm$ 0.015 [0.206, 0.229] \\
+Direct covariance & 0.243 $\pm$ 0.021 [0.226, 0.259] \\
+Supervised BP & 0.319 $\pm$ 0.030 [0.296, 0.341] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Predeclared paired primary effects across matched seeds.}
+\label{tab:primary-contrasts}
+\begin{tabular}{lc}
+\toprule
+Contrast & Mean difference [95\% CI] \\
+\midrule
+\TeReL{}-local $-$ Random & -0.0042 [-0.0092, -0.0003] \\
+\TeReL{}-ordered $-$ \TeReL{}-shuffled & -0.0047 [-0.0625, 0.0530] \\
+\bottomrule
+\end{tabular}
+\end{table}

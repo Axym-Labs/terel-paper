@@ -1,0 +1,47 @@
+\begin{table}[H]
+\centering
+\small
+\caption{Encoder-fit resource accounting, averaged across five seeds. Observed time and peak allocated device memory describe the frozen execution environment; MAC is the sum of the declared linear forward/backward and same-layer pairwise operation proxies for neural methods. Random encoders require no fit and are omitted. CPU SFA memory and operation proxies were not instrumented.}
+\label{tab:confirmatory-resources}
+\begin{tabular}{llrrrrr}
+\toprule
+Dataset & Method & Epoch/pass & Examples & Seconds & Peak MiB & MAC (G) \\
+\midrule
+MNIST & \TeReL{}-local & 10 & 500000 & 55.2 & 77.7 & 1126.4 \\
+MNIST & Local SupCon & 10 & 500000 & 50.3 & 76.2 & 996.0 \\
+MNIST & Direct covariance & 10 & 500000 & 55.8 & 80.1 & 1126.4 \\
+MNIST & Supervised BP & 10 & 500000 & 12.0 & 224.6 & 802.6 \\
+PAMAP2 & \TeReL{}-ordered & 10 & 1441630 & 71.8 & 78.2 & 1626.8 \\
+PAMAP2 & \TeReL{}-shuffled & 10 & 1441630 & 93.5 & 78.2 & 1626.8 \\
+PAMAP2 & Batch SFA & 1 & 144163 & 0.1 & -- & -- \\
+PAMAP2 & IncSFA & 1 & 144163 & 111.8 & -- & -- \\
+PAMAP2 & Direct covariance & 10 & 1441630 & 60.1 & 79.7 & 1626.8 \\
+PAMAP2 & Supervised BP & 10 & 1441630 & 13.7 & 99.7 & 695.3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Raw confirmatory metrics in seed order 1001--1005.}
+\label{tab:raw-confirmatory}
+\begin{tabular}{lll}
+\toprule
+Dataset & Method & Raw seed values \\
+\midrule
+MNIST & \TeReL{}-local & 0.8938, 0.8851, 0.8881, 0.8847, 0.8784 \\
+MNIST & Random & 0.8971, 0.8860, 0.8922, 0.8835, 0.8921 \\
+MNIST & Local SupCon & 0.9430, 0.9453, 0.9455, 0.9437, 0.9403 \\
+MNIST & Direct covariance & 0.9154, 0.9163, 0.9157, 0.9145, 0.9158 \\
+MNIST & Supervised BP & 0.9792, 0.9772, 0.9774, 0.9777, 0.9795 \\
+PAMAP2 & \TeReL{}-ordered & 0.2429, 0.3118, 0.2517, 0.3235, 0.4075 \\
+PAMAP2 & \TeReL{}-shuffled & 0.3381, 0.2696, 0.3208, 0.3070, 0.3253 \\
+PAMAP2 & Random & 0.2883, 0.3856, 0.3246, 0.2915, 0.3180 \\
+PAMAP2 & Batch SFA & 0.1845, 0.1829, 0.1852, 0.1875, 0.1839 \\
+PAMAP2 & IncSFA & 0.2168, 0.2079, 0.1978, 0.2337, 0.2313 \\
+PAMAP2 & Direct covariance & 0.2294, 0.2187, 0.2350, 0.2630, 0.2665 \\
+PAMAP2 & Supervised BP & 0.3328, 0.2943, 0.3595, 0.2857, 0.3205 \\
+\bottomrule
+\end{tabular}
+\end{table}

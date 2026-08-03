@@ -4,7 +4,6 @@
 \def\PublicationReadableType{}
 \def\PublicationWideMargins{}
 \def\PublicationTwoRules{}
-\def\PublicationDedicatedFrontPage{}
 
 \usepackage{PRIMEarxiv}
 \usepackage[utf8]{inputenc}
@@ -32,6 +31,7 @@
 \newtheorem{definition}{Definition}
 
 \pagestyle{fancy}
+\raggedbottom
 \thispagestyle{empty}
 \rhead{\textit{}}
 \fancyhead[LO]{Temporal Regularized Learning}
@@ -82,11 +82,16 @@ order, and show that streaming execution retains no temporal computation graph.
 The dynamic state is bounded in stream length but includes a dense lateral
 operator and is therefore quadratic in layer width.  We evaluate the corrected
 implementation under an untouched-test protocol with matched probes and five
-seeds.  Label-ordered MNIST serves as a controlled, explicitly label-assisted
-setting; PAMAP2 provides natural chronological pretraining whose activity
-labels are unavailable to the encoder.  These experiments separate useful
-local representation learning from random features, supervision through
-ordering, and the contribution of natural temporal order.}
+seeds.  The results set a narrow empirical boundary around the mechanism.  On
+label-ordered MNIST, \TeReL{} changes class geometry: nearest-centroid accuracy
+rises by 9.19 percentage points over random features, while its linear-probe accuracy is
+slightly lower (88.60\% versus 89.02\%).  The exact in-batch covariance control
+reaches 91.55\%, exposing a cost to the local lateral proxy.  On
+subject-disjoint PAMAP2, chronological pretraining does not outperform
+shuffling (0.307 versus 0.312 macro-F1), and both suffer a large
+validation-to-test shift.  Thus the corrected evidence supports the specified
+local mechanism and a measurable geometry change, but not an accuracy
+advantage or a robust benefit from natural temporal order.}
 \publicationlinks{%
   \textbf{Code:}\enspace
   \href{https://github.com/Axym-Labs/TeReL}{\nolinkurl{https://github.com/Axym-Labs/TeReL}}\\
@@ -154,7 +159,7 @@ The paper makes four contributions:
   \item We give the implemented objective, exact activation and weight
   gradients for detached and undetached time, the detached state updates, and
   a quantitative error decomposition for the shifted lateral heuristic.
-  \item We demonstrate genuine batch-size-one execution and report parameters,
+  \item We demonstrate batch-size-one execution and report parameters,
   optimizer state, dynamic state, peak memory, and throughput separately.
   \item We provide corrected, leakage-free experiments with matched
   architectures and last-layer probes, bounded validation selection, five
@@ -300,7 +305,7 @@ activation graph survives the call.
 
 \subsection{Variants and claim boundary}
 
-\begin{table}[t]
+\begin{table}[H]
 \centering
 \caption{Variants used in the experiments.  ``Time graph'' and ``depth graph''
 indicate whether autograd crosses those boundaries.}
@@ -450,9 +455,12 @@ model result or grid entry, and all earlier ledgers are retained.  The grid
 varies AdamW learning rate, $\lambda_V$, and $\lambda_C$ while fixing
 $\lambda_S=1$, statistics momentum 0.9, and lateral momentum 0.99.  The state
 rates were fixed by validation-only collapse pilots before the sweep.  All
-representation methods share a
-30-epoch AdamW probe with the same batch size and learning rate.  The common
-neural-encoder budget is 10 epochs.  Batch SFA uses its closed-form fit;
+representation methods share a 30-epoch AdamW probe (learning rate 0.003,
+weight decay $10^{-4}$, batch size 2,048).  Both datasets select AdamW with
+learning rate $3\times10^{-4}$, weight decay $10^{-4}$,
+$(\lambda_S,\lambda_V,\lambda_C)=(1,5,1)$, and chunk length 16.  Encoder batch
+size is 256 for MNIST and 512 for PAMAP2.  The common neural-encoder budget is
+10 epochs.  Batch SFA uses its closed-form fit;
 IncSFA uses one official-algorithm online pass with all 52 available linear
 components.  Both report their own sample/pass counts and do not support
 efficiency claims against the neural methods.
@@ -480,7 +488,7 @@ new tuning.
 }{%
   \noindent\fbox{\parbox{0.95\linewidth}{Confirmatory result tables are
   generated only after the held-out manifest gate.  This draft intentionally
-  contains no inherited numerical values from the rejected implementation.}}
+  contains no inherited numerical values from the superseded implementation.}}
 }
 
 \subsection{Corrected depth fidelity}
@@ -488,37 +496,119 @@ new tuning.
 Every confirmatory run records the $\ell_2$ parameter change for every declared
 encoder layer and the change in every lateral state.  A run is invalid if any
 intended layer is unchanged.  This directly guards against the optimizer
-registration defect that invalidated the submitted deep results.  The BP model
+registration defect that invalidated the earlier deep results.  The BP model
 is constructed from the same declarative dimension list, and a regression test
 executes each hidden layer, including the historical three-layer comparison.
+Across 40 neural encoder fits, all 80 intended layer deltas are nonzero; the
+smallest is 5.03 in $\ell_2$ norm.  The 50 tracked lateral-state deltas are also
+nonzero, with minimum 3.17.
 
 \subsection{What MNIST can and cannot establish}
 
-The MNIST experiment asks whether the corrected local rule can exploit a
-controlled persistent ordering and produce a useful final representation.  Its
-paired comparison to the identical random encoder isolates learning beyond
-random features; local supervised contrastive learning tests whether explicit
-same-class attraction is a stronger use of the labels already present in the
-ordering.  Even a favorable result would establish label-assisted local
-representation learning, not learning from an unlabeled stream.
+The corrected local rule does not improve the primary linear readout.  Across
+seeds, \TeReL{} reaches 88.60\% accuracy and the identical random encoder
+89.02\%; the paired effect is $-0.42$ percentage points with 95\% bootstrap
+interval $[-0.92,-0.03]$.  Direct in-batch covariance reaches 91.55\%, local
+supervised contrastive learning 94.36\%, and BP 97.82\%.  Thus neither the
+optimizer repair nor a matched readout supports a competitive-
+accuracy claim.
+
+The representation does change systematically.  Relative to random
+features, \TeReL{} raises nearest-centroid accuracy from 75.96\% to 85.15\%,
+raises the mean between/within-class scatter ratio from 0.217 to 0.418, and
+raises median unit class selectivity from 1.16 to 1.56.  All five paired effects
+have the same sign.  This label-aligned compression comes with lower effective
+rank (20.3 versus 31.7) and higher residual correlation (0.134 versus 0.090),
+which helps explain why cleaner class prototypes do not improve the optimized
+linear probe.  Because labels created the persistent order, these are effects
+of label-assisted temporal supervision, not self-supervised learning.  Direct
+label positives and BP produce much larger between/within scatter ratios (3.21
+and 2.00), so the geometry effect is neither unique nor competitive with
+explicit supervision.
+
+\begin{table}[H]
+\centering
+\small
+\caption{MNIST representation diagnostics, averaged across the five frozen
+seeds.  B/W is between/within-class scatter, Sel. is median unit class
+selectivity, $r_{\mathrm{eff}}$ is covariance effective rank, and
+$|\rho_{\mathrm{off}}|$ is mean absolute off-diagonal correlation.}
+\label{tab:mnist-geometry}
+\begin{tabular}{lrrrrrr}
+\toprule
+Method & Linear (\%) & Centroid (\%) & B/W & Sel. & $r_{\mathrm{eff}}$ & $|\rho_{\mathrm{off}}|$ \\
+\midrule
+Random & 89.02 & 75.96 & 0.217 & 1.16 & 31.7 & 0.090 \\
+\TeReL{}-local & 88.60 & 85.15 & 0.418 & 1.56 & 20.3 & 0.134 \\
+Local SupCon & 94.36 & 87.74 & 3.214 & 2.77 & 4.6 & 0.252 \\
+Direct covariance & 91.55 & 87.91 & 0.046 & 0.63 & 163.4 & 0.036 \\
+Supervised BP & 97.82 & 96.26 & 1.996 & 2.46 & 7.7 & 0.271 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Natural temporal order on PAMAP2}
 
-The decisive self-supervised contrast holds architecture, initialization,
+The self-supervised contrast holds architecture, initialization,
 optimizer, sample count, probe, and labels fixed while permuting only the
-encoder stream.  Chronological minus shuffled macro-F1 therefore estimates the
-downstream value of natural adjacency for this learner.  Batch SFA and IncSFA
-place the effect relative to classical slowness algorithms; random and BP mark
-untrained and fully supervised references.
+encoder stream.  It does not support a natural-order advantage.  Chronological
+\TeReL{} obtains 0.307 macro-F1 and shuffled \TeReL{} 0.312; the paired effect
+is $-0.0047$ with 95\% interval $[-0.0625,0.0530]$.  Raw paired effects change
+sign across seeds.  The selected chronological configuration had reached 0.721
+on validation subject 7, exposing a large and unstable subject-8 shift rather
+than a repeatable benefit from adjacency.  Random features (0.322) and
+supervised BP (0.319) are similarly low, so the shift is not unique to the
+local rule.  These data do not support a self-supervised benefit from natural
+temporal order.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{figures/confirmatory-paired-effects.pdf}
+  \caption{Matched-seed primary effects.  Each line joins identical seeds and
+  black bars show means.  \textbf{a:} label-ordered MNIST \TeReL{} versus its
+  identical untrained encoder.  \textbf{b:} chronological versus shuffled
+  PAMAP2 encoder streams.  The small MNIST effect favors random features; the
+  PAMAP2 effects change sign across seeds.}
+  \label{fig:paired-effects}
+\end{figure}
 
 \subsection{Streaming execution and cost}
 
-The batch-size-one run uses detached previous activations and population state,
-checks that stored tensors have no autograd parent, and verifies that dynamic
-state is constant as stream length grows.  We report its feature variance,
-throughput, peak allocated device memory, parameter bytes, optimizer bytes, and
-the $D^2+4D+1$ dynamic-state bytes separately.  Minibatch execution is a speed
-comparison, not evidence that the objective itself requires a batch.
+In a 2,048-example audit, the batch-size-one run uses detached previous
+activations and population state.  No stored state has an autograd parent, and
+the dynamic state remains 330,754 elements before and after the stream.  The
+encoder has 2,132,992 parameter bytes, 4,266,000 AdamW-state bytes, and
+1,323,010 dynamic-state bytes; only the last quantity is history-bearing.  Peak
+allocated CUDA memory is 75.5 MiB at batch size one and 77.7 MiB for either
+minibatch variant.
+
+\begin{table}[H]
+\centering
+\small
+\caption{One-epoch locality audit on 2,048 MNIST examples.  Throughput is a
+shared-GPU execution comparison, not a hardware-efficiency claim.  The
+batch-size-one run makes 2,048 updates rather than eight, so its representation
+diagnostics are not a quality-matched comparison.}
+\label{tab:locality-audit}
+\begin{tabular}{lrrrrrr}
+\toprule
+Execution & $B$ & Time detach & Peak MiB & Examples/s & $r_{\mathrm{eff}}$ & Active \\
+\midrule
+Streaming & 1 & yes & 75.5 & 64 & 4.68 & 0.414 \\
+Detached minibatch & 256 & yes & 77.7 & 15,560 & 19.58 & 0.895 \\
+Undetached minibatch & 256 & no & 77.7 & 7,100 & 26.90 & 0.891 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The streaming diagnostic passes the frozen mean-variance and active-fraction
+gates (0.0706 and 0.414), but its effective rank of 4.68 falls just below the
+predeclared threshold of 5.  The audit therefore establishes bounded history
+and local temporal credit assignment, not non-collapsed or accuracy-equivalent
+learning at batch size one.  Minibatching amortizes kernel launches, while
+undetached within-batch time adds the future-pair gradient.  The throughput
+measurements were collected with unrelated GPU co-tenants and receive no
+stronger interpretation.
 
 \section{Limitations}
 
@@ -532,9 +622,12 @@ class imbalance.
 The dense lateral operator is the largest conceptual cost.  It gives bounded
 history but $O(D^2)$ state and within-layer communication.  Sparse, low-rank,
 or learned approximations are future work and should be evaluated rather than
-assumed equivalent.  The anti-collapse term can fail if its running state
+assumed equivalent.  The large MNIST gap between the exact covariance control
+and the tracked proxy shows that bounded-history substitution is not benign:
+it reduces effective rank and downstream accuracy under the selected setting.
+The anti-collapse term can fail if its running state
 responds too slowly.  Our fixed state rate was selected by explicit collapse
-diagnostics, and the first complete ReLU validation round was rejected by the
+diagnostics, and the first complete ReLU validation round failed the
 initial variance rule before LeakyReLU was fixed for the second round.  An
 explicit random-feature control then showed why scale, active fraction, and
 effective rank must be reported together rather than treating coordinate scale
@@ -553,8 +646,8 @@ paths, repeated seeds, and matched random-state controls.
 
 \section{Conclusion}
 
-Temporal coherence, variance preservation, and decorrelation form a compelling
-representation-learning recipe because they connect modern regularized
+Temporal coherence, variance preservation, and decorrelation form a useful
+representation-learning recipe that connects modern regularized
 self-supervision to SFA.  \TeReL{} turns that recipe into a concrete deep local
 rule: each nonlinear layer receives a detached temporal error, a gated
 neuron-local expansion signal, and a tracked same-layer decorrelation signal.
@@ -562,13 +655,16 @@ The resulting credit assignment is local across depth and, when the preceding
 activation is detached, across time.  Its history is bounded, although its
 lateral state is quadratic in width.
 
-The corrected experiments are designed to keep this intuition intact while
-drawing the claim boundary sharply.  Label ordering is treated as supervision;
-natural-stream evidence is evaluated separately; every layer update and split
-role is tested; and held-out results are paired, repeated, and provenance
-locked.  The value of \TeReL{} is therefore not a claim to have invented SFA's
-objective, but a testable deep parameterization for learning useful temporal
-representations without end-to-end or through-time credit assignment.
+The corrected experiments sharpen this intuition and its limits.  \TeReL{}
+does not improve the matched random
+encoder on MNIST, and chronological PAMAP2 does not beat a shuffled stream on
+the held-out subject.  Every local layer does learn; label-derived persistence
+produces a repeatable class-geometry change; batch-size-one execution needs no
+temporal graph; and exact covariance substantially outperforms the
+bounded-state lateral proxy.  The evidence supports \TeReL{} as a precisely
+specified, falsifiable deep local parameterization of soft SFA.  It does not
+show that local temporal learning is already competitive with end-to-end
+supervision or robust across natural streams.
 
 \bibliographystyle{unsrt}
 \bibliography{references}
@@ -635,7 +731,15 @@ PyTorch algorithms, deterministic cuDNN behavior, and the prescribed cuBLAS
 workspace configuration.  The protocol, selection plan, validation ledger,
 confirmatory manifest, per-seed JSON records, raw confusion matrices,
 hardware/software record, and generated paper tables are checksum linked.  The
-core commands are:
+executed identifiers are:
+\begin{verbatim}
+code       abfa0ec1df78204b66d0c34141f5deb6063a572a
+manifest   38ca928e0884a8bc40a5c7ffefc46313fc96c170661aea63f93bf9496b2b1af0
+config     c2520fa7e5751ca879da6683e6c193bfa5a800f59ec685e82199d892bbce8c42
+protocol   88b927102b51deda53cb911c5383bc8d697dbcae1b0a0465321398f94413cd87
+results    ad817a220fae65f9ebceb5941f967ec5bff2015c10847d1f8b00f54032ce7213
+\end{verbatim}
+The core commands are:
 \begin{verbatim}
 uv sync --extra test
 uv run pytest -q
