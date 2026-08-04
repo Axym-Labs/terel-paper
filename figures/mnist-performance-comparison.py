@@ -13,7 +13,6 @@ import numpy as np
 PRIMARY = "#3F21B6"
 SECONDARY = "#8C7AD3"
 NEUTRAL = "#747474"
-DARK = "#252525"
 
 
 def render(
@@ -32,18 +31,18 @@ def render(
         ("local-supcon", "Local\nSupCon", NEUTRAL),
         ("terel-last", "TeReL\nlast", SECONDARY),
         ("terel-all", "TeReL\nall", PRIMARY),
-        ("bp-all", "BP", DARK),
+        ("bp-all", "BP", NEUTRAL),
     ]
     contrasts = [
-        ("terel-minus-random-bn", "random+BN", PRIMARY),
+        ("terel-minus-random-bn", r"TeReL $-$ Rand.+BN", PRIMARY),
         ("terel-s-minus-random", r"TeReL-S $-$ random", SECONDARY),
-        ("terel-minus-local-supcon", "Local SupCon", PRIMARY),
-        ("terel-minus-bp", "BP", PRIMARY),
-        ("terel-last-minus-all", r"last $-$ all", SECONDARY),
+        ("terel-minus-local-supcon", r"TeReL $-$ Local SupCon", PRIMARY),
+        ("terel-minus-bp", r"TeReL $-$ BP", PRIMARY),
+        ("terel-last-minus-all", r"TeReL last $-$ all", SECONDARY),
     ]
     fig, axes = plt.subplots(
         1, 2, figsize=(7.05, 2.75),
-        gridspec_kw={"width_ratios": [1.12, 1.0], "wspace": 0.32},
+        gridspec_kw={"width_ratios": [1.12, 1.0], "wspace": 0.48},
     )
 
     ax = axes[0]
@@ -65,7 +64,7 @@ def render(
     ax.set_xticks(range(len(methods)), [item[1] for item in methods])
     ax.tick_params(axis="x", labelsize=7.2)
     ax.set_ylabel("Test accuracy (%)")
-    ax.set_ylim(94.1, 98.85)
+    ax.set_ylim(94.9, 98.65)
     ax.text(-0.12, 1.02, "a", transform=ax.transAxes, fontweight="bold")
     ax.grid(axis="y", color="#DDDDDD", linewidth=0.6)
     ax.spines[["top", "right"]].set_visible(False)
@@ -93,7 +92,7 @@ def render(
     ax.set_yticks(range(len(contrasts)), [item[1] for item in contrasts])
     ax.invert_yaxis()
     ax.set_xlabel("Paired accuracy difference (points)")
-    ax.set_xlim(-1.45, 2.95)
+    ax.set_xlim(-1.35, 2.45)
     ax.text(-0.12, 1.02, "b", transform=ax.transAxes, fontweight="bold")
     ax.grid(axis="x", color="#DDDDDD", linewidth=0.6)
     ax.spines[["top", "right", "left"]].set_visible(False)

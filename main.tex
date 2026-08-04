@@ -47,14 +47,13 @@ explicit compute accounting.}
 \maketitle
 
 \begin{abstract}
-Temporal coherence is an attractive learning signal when
-credit assignment must remain within a layer, but slowness alone admits a
-collapsed solution.  We introduce Temporal Regularized Learning (\TeReL), a
-deep local rule that combines temporal coherence, gated variance expansion, and
-a same-layer decorrelation signal.  The objective is a soft neural form of Slow
-Feature Analysis (SFA), viewed through the
+Temporal coherence offers a learning signal for layer-local credit assignment,
+but slowness alone admits a collapsed solution.  We introduce Temporal
+Regularized Learning (\TeReL), a deep local rule that combines temporal
+coherence, gated variance expansion, and a same-layer decorrelation signal.  Its
+objective is a soft neural form of Slow Feature Analysis (SFA), viewed through the
 variance--invariance--covariance structure of modern regularized
-self-supervision.  We define two roles in the method family: canonical
+self-supervision.  The method family has two variants: canonical
 \TeReL{} is greedy and layer-local while retaining gradients between adjacent
 activations inside a short chunk; \TeReL{}-S detaches the temporal reference
 and supports bounded-state samplewise execution.  We derive both gradients,
@@ -73,16 +72,16 @@ feature scale, and removing decorrelation collapses effective rank; the lagged
 lateral direction has 0.76 mean cosine alignment with its same-batch target.  A
 separately tuned, strictly samplewise \TeReL{}-S
 configuration reaches $95.14\pm0.04$\% validation accuracy with no retained
-temporal graph and fixed state.  A chronological PAMAP2 stress test remains
-inconclusive and is reported as a secondary boundary, not the paper's center.
-Together, these results establish a competitive empirical finding in the
-constructed MNIST regime while making precise which locality, streaming, and
-natural-order conclusions the evidence supports.
+temporal graph and fixed state.  A chronological PAMAP2 stress test is
+inconclusive, leaving the natural-order question open.
+The evidence supports a competitive result in the constructed MNIST regime,
+distinguishes layer-local from temporally local execution, and leaves transfer
+to naturally ordered streams unresolved.
 \end{abstract}
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth,height=0.31\textheight,keepaspectratio]{\LeadFigurePath}
+  \includegraphics[width=\linewidth,height=0.56\textheight,keepaspectratio]{\LeadFigurePath}
   \caption{\LeadFigureCaption}
   \label{fig:overview}
 \end{figure}
@@ -93,9 +92,9 @@ Many observations change faster than the latent causes that generate them.
 Object identity persists while viewpoint and illumination vary; a person's
 activity persists across noisy wearable-sensor readings; and the state of a
 dynamical system generally evolves more slowly than its measurement noise.
-Temporal proximity can therefore replace hand-designed paired views as a
-learning signal.  The difficulty is that making adjacent representations equal
-also makes a constant representation optimal.
+Temporal proximity can therefore serve as a learning signal in place of
+hand-designed paired views.  The difficulty is that making adjacent
+representations equal also makes a constant representation optimal.
 
 Classical Slow Feature Analysis (SFA) resolves this ambiguity by minimizing
 temporal derivatives subject to zero-mean, unit-variance, and decorrelation
@@ -103,8 +102,9 @@ constraints~\cite{wiskott2002}.  Modern regularized self-supervised objectives
 arrive at a closely related structure: an invariance term is paired with
 variance and covariance regularizers to prevent collapse~\cite{bardes2022,
 zbontar2021}.  The shared structure is not itself new.  Our question is instead
-an implementation question: can this soft-SFA objective train each nonlinear
-layer without gradients from later layers or through temporal history?
+an implementation question: can a soft-SFA objective train each nonlinear layer
+without gradients from later layers, and what additional detachment is needed
+for bounded-history execution?
 
 \TeReL{} answers with three same-layer signals.  A temporal term attracts the
 current activation to its preceding activation.  A neuron-local term
@@ -115,10 +115,10 @@ input to every subsequent layer makes the parameter update spatially local in
 the credit-assignment sense.  Canonical \TeReL{} retains the preceding
 activation in a short within-chunk graph and is therefore layer-local but not
 strictly online.  \TeReL{}-S detaches that reference, making the rule causal
-and bounded-history.  Minibatches may still execute either variant efficiently;
+and bounded-history.  Minibatches may still execute either variant;
 batching is not itself the locality claim.
 
-This distinction matters because three claims are easily conflated.  First,
+The method has three distinct claim boundaries.  First,
 local credit assignment does not imply sparse communication: the lateral
 operator communicates within a layer.  Second, bounded history does not imply
 constant state in width: a dense width-$D$ lateral operator costs $D^2$.
@@ -126,19 +126,19 @@ Third, an objective without label terms is not self-supervised if labels were
 used to construct its temporal order.  We therefore use label-ordered MNIST as
 a controlled temporal-supervision study.  Chronological wearable streams with
 activity classes withheld from the encoder loss provide a secondary natural-order
-stress test; their inconclusive outcome is not allowed to displace the
-controlled competitive result.
+stress test.  Because that test is inconclusive, the empirical claim remains
+confined to the controlled construction.
 
 The paper makes five contributions:
 \begin{enumerate}
   \item We formulate \TeReL{} as a deep, layer-local soft-SFA rule and locate
   its contribution relative to SFA, Incremental SFA, Bio-SFA, VICReg, and
   gradient-isolated predictive, contrastive, and blockwise self-supervised learning.
-  \item We give the implemented objective, exact activation and local parameter
-  gradients for detached and undetached time, including the canonical
-  within-layer normalization Jacobian, the detached state updates, and
-  a quantitative error decomposition for the shifted lateral heuristic, and
-  measure the successful lagged operator against its same-batch direction.
+  \item We derive exact activation and local parameter gradients for detached
+  and undetached time, including the canonical within-layer normalization
+  Jacobian, and specify the detached state updates.  We also decompose the
+  error of the lagged lateral proxy and measure its alignment with the
+  same-batch direction.
   \item We demonstrate competitive constructed-MNIST performance: canonical
   \TeReL{} reaches 97.30\%, versus 98.34\% for backpropagation with the same
   data presentations and 95.35\% for a normalization-matched random encoder.
@@ -172,7 +172,7 @@ duplicated solutions.  In one common statement it minimizes
 $\mathbb{E}\|z_t-z_{t-1}\|_2^2$ subject to zero mean, unit variance, and
 decorrelated outputs~\cite{wiskott2002}.  \TeReL{} replaces hard population
 constraints by detached running state and local soft terms.  This is a
-particular neural parameterization and optimizer, not a new discovery of the
+particular neural parameterization and learning rule, not a new discovery of the
 SFA objective.
 
 For one layer, consider $B$ activations $z_t\in\mathbb{R}^D$.  A Boolean
@@ -297,8 +297,9 @@ A_k &= \rho_A A_{k-1}+(1-\rho_A)\offdiag\left(
 \label{eq:lat-update}
 \end{align}
 Thus $\rho_A=0$ makes $A_k=C_k$, but the loss for batch $k$ has already used
-$A_{k-1}$; the successful configuration is a one-minibatch-lagged proxy.  The
-pre-step mean $m_{k-1}$ is used in \cref{eq:var-update,eq:lat-update}.  For
+$A_{k-1}$; the canonical configuration is therefore a one-minibatch-lagged
+proxy.  The pre-step mean $m_{k-1}$ is used in
+\cref{eq:var-update,eq:lat-update}.  For
 \TeReL{}-S, the final activation and its centered value are stored as detached
 temporal state.  No activation graph survives the call.
 
@@ -366,6 +367,12 @@ does not remove the dense lateral matrix.
 
 \section{Relation to prior work}\label{sec:related}
 
+The closest precedents separate into two lines: SFA supplies the objective
+structure, whereas deep local representation learning supplies the
+credit-assignment setting.  \TeReL{} combines these concerns through a
+particular soft objective and execution boundary rather than replacing either
+line of work.
+
 \paragraph{SFA and incremental SFA.}
 SFA is the objective-level ancestor of \TeReL{}: temporal slowness, variance,
 and decorrelation are its defining ingredients~\cite{wiskott2002}.  Batch
@@ -380,21 +387,20 @@ differs by applying a soft objective directly to each nonlinear learned layer,
 at the cost of a dense tracked lateral operator.
 
 PowerSFA instead makes approximate whitening differentiable and thereby trains
-deep SFA models end to end~\cite{schuler2018}.  This establishes that a neural,
-gradient-trained SFA parameterization is not itself the contribution here;
-\TeReL{} removes the gradient path across learned layers and, in \TeReL{}-S,
-across temporal history.  Deep temporal-coherence objectives also predate this
-work: for example, Slow and Steady Feature Analysis regularizes first- and
-higher-order changes across video tuples in a convolutional encoder
+deep SFA models end to end~\cite{schuler2018}.  Deep gradient-based SFA is thus
+established prior art.  \TeReL{} removes the gradient path across learned layers
+and, in \TeReL{}-S, across temporal history.  Deep temporal-coherence objectives
+also predate this work: for example, Slow and Steady Feature Analysis
+regularizes first- and higher-order changes across video tuples in a convolutional encoder
 ~\cite{jayaraman2016}.  \TeReL{} returns to first-order adjacency to study the
 distinct question of layer-local soft constraints and bounded temporal state.
 
 \paragraph{Bio-SFA and trace learning.}
 Bio-SFA derives an online neural network for the SFA problem with local
-synaptic updates~\cite{lipshutz2020}.  This prevents us from presenting local
-online SFA as absent from prior work.  \TeReL{} instead contributes a different
+synaptic updates~\cite{lipshutz2020}.  Local online SFA is therefore established
+prior work.  \TeReL{} contributes a different
 deep soft-penalty parameterization and an explicit stop-gradient implementation
-that is easy to compose with standard nonlinear layers.  F\"oldi\'ak-style
+for standard nonlinear layers.  F\"oldi\'ak-style
 trace learning also exploits temporal persistence~\cite{foldiak1991}; its
 positive activation trace is not algebraically the same as the signed
 difference in \cref{eq:local-gradient}.
@@ -410,11 +416,11 @@ still relying on positive and negative examples~\cite{illing2021}.  LoCo instead
 improves paired-view local contrastive learning with overlapping blocks, which
 allows the next block's local loss to influence parameters in the overlap and
 therefore relaxes strict gradient isolation~\cite{xiong2020}.  These methods
-preclude claiming either local temporal prediction or gradient-isolated deep
-learning as new here.  Relative to them, \TeReL{} studies a noncontrastive
+establish both local temporal prediction and gradient-isolated deep learning as
+prior art.  Relative to them, \TeReL{} studies a noncontrastive
 soft-SFA loss with explicit variance and redundancy controls; \TeReL{}-S uses
-no negative set or predictive decoder, but pays for a dense lagged same-layer
-operator.  Our constructed MNIST protocol is also label-assisted through
+no negative set or predictive decoder, but requires a dense lagged same-layer
+operator.  The constructed MNIST protocol is also label-assisted through
 ordering, unlike their principal unlabeled settings.
 
 \paragraph{Regularized and blockwise self-supervision.}
@@ -422,9 +428,8 @@ VICReg and Barlow Twins use variance/covariance or cross-correlation penalties
 to prevent collapse without negatives~\cite{bardes2022,zbontar2021}.  Blockwise
 self-supervised learning has already shown that VICReg, Barlow Twins, and
 contrastive losses can train network blocks without end-to-end
-backpropagation~\cite{siddiqui2024}.  \TeReL{} is therefore not distinguished by
-``a local VICReg loss'' alone.  Its narrower focus is temporal positives,
-detached streaming moments, and a same-layer covariance-gradient proxy that can
+backpropagation~\cite{siddiqui2024}.  \TeReL{} instead focuses on temporal
+positives, detached streaming moments, and a same-layer covariance-gradient proxy that can
 execute one observation at a time.
 
 Two boundaries sharpen that comparison.  Siddiqui et al. find simultaneous
@@ -452,7 +457,7 @@ structure.
 Method & Temporal objective & Execution & Learned mapping & Auxiliary state\\
 \midrule
 Batch SFA & derivative minimization & batch eigensystem & linear & covariance and whitening\\
-IncSFA & derivative minimization & sample based & linear; deep cascades possible & incremental PCA and MCA state\\
+IncSFA & derivative minimization & sample-based & linear; deep cascades possible & incremental PCA and MCA state\\
 Bio-SFA & derivative minimization & online neural dynamics & linear network in reported derivation & synaptic/dual variables\\
 Greedy InfoMax & natural-order InfoNCE & greedy isolated modules & deep nonlinear modules & context/predictor and negatives\\
 CLAPP & causal contrastive prediction & local in depth and time & deep nonlinear layers & predictive input, modulation, negatives\\
@@ -474,7 +479,7 @@ result carried only by early layers or retained by the final layer?  Third, can
 state?  Fourth, as a secondary stress test, does the temporal-coherence
 advantage transfer to a natural wearable stream?
 
-\subsection{Data roles and leakage control}
+\subsection{Data splits and roles}
 
 \paragraph{MNIST controlled temporal supervision.}
 The official 60,000-example training split is stratified with seed 1701 into
@@ -520,18 +525,18 @@ Backpropagation uses the same hidden dimensions, activation, normalization,
 optimizer, batch size, and 60 data passes, trained end to end with cross
 entropy.  \TeReL{}-S uses detached temporal references, joint local training,
 no batch normalization, $(1,5,1)$, and a separately validated ten-pass
-schedule.  It is an intentionally lean temporally local variant, so its compute
-is reported rather than described as matched to BP.  A no-normalization random
-reference retains the same seed-specific hidden weights but omits normalization;
+schedule.  Because this variant uses ten rather than 60 data passes, its
+resource use is reported rather than treated as matched to BP.  A
+no-normalization random reference retains the same seed-specific hidden weights but omits normalization;
 we keep it because it matches the no-normalization \TeReL{}-S architecture.
 The normalization-matched random control instead includes the canonical affine
 BatchNorm modules.  Its hidden weights and biases remain at initialization, as
 do BatchNorm scale one and offset zero.  Under \texttt{no\_grad}, one pass over
 the 50,000 training examples in stored order (batch size 256) calibrates only
 running means and variances with update momentum 0.1 (0.9 retention).  The
-model then enters evaluation mode, and those
-fixed train-only statistics are exposed to the same all-layer probe and test
-examples.  This is data-dependent normalization, not an encoder-parameter
+model then enters evaluation mode, and the same all-layer probe uses those
+fixed train-only statistics during representation extraction.  This is
+data-dependent normalization, not an encoder-parameter
 update.
 
 Canonical minibatches concatenate randomly permuted class-homogeneous chunks,
@@ -556,8 +561,8 @@ The primary readout for every method is the same linear classifier over the
 concatenation of both hidden layers.  A final-layer-only probe on the identical
 canonical encoder is a secondary audit of depth specialization.  All probes use
 AdamW for 60 epochs (learning rate 0.003, weight decay $10^{-4}$, batch size
-2,048).  This matched-access design prevents a comparison in which a local
-method exposes less of its representation than the baseline.
+2,048).  Matching representation access avoids confounding the training method
+with the breadth of the readout.
 
 \subsection{Model selection and evaluation separation}
 
@@ -596,13 +601,6 @@ the complete selection ledger and raw outputs.
 
 \section{Results}\label{sec:results}
 
-\IfFileExists{generated_primary_results.tex}{%
-  \input{generated_primary_results.tex}%
-}{%
-  \noindent\fbox{\parbox{0.95\linewidth}{Primary result tables are generated
-  from the supplied per-seed records.}}
-}
-
 \subsection{Competitive performance}
 
 Canonical \TeReL{} reaches $97.30\pm0.07$\%, compared with
@@ -613,12 +611,19 @@ BatchNorm-calibrated random encoder,
 $95.35\pm0.19$\%, compared with $95.13\pm0.27$\% for the retained
 no-normalization random reference; their paired difference is 0.22 points
 ($[-0.08,0.52]$).  In error-rate terms, however,
-its 2.70\% error is 63\% higher than BP's 1.66\%; the small absolute-accuracy
-gap should therefore not be read as error-rate parity.  All five seeds satisfy the
+its 2.70\% error is 63\% higher than BP's 1.66\%; proximity in absolute accuracy
+does not imply error-rate parity.  All five seeds satisfy the
 non-collapse criteria, and every intended layer and normalization group has a
-nonzero parameter update.  The evidence therefore supports the
-paper's central empirical statement within this constructed MNIST regime: a
+nonzero parameter update.  Within this constructed MNIST regime, the evidence
+supports the paper's central empirical statement: a
 two-hidden-layer network trained by layer-local soft-SFA reaches 97.30\%.
+
+\IfFileExists{generated_primary_results.tex}{%
+  \input{generated_primary_results.tex}%
+}{%
+  \noindent\fbox{\parbox{0.95\linewidth}{Primary result tables are generated
+  from the supplied per-seed records.}}
+}
 
 \IfFileExists{generated_normalization_control.tex}{%
   \input{generated_normalization_control.tex}%
@@ -634,9 +639,9 @@ Student-$t$ interval of $[0.13,0.52]$.  Local SupCon sees every same-label
 positive in each minibatch, whereas \TeReL{} sees only adjacency in the
 label-constructed chunks.  Thus access to a generic layer-local same-class
 positive objective does not by itself reproduce the \TeReL{} result in this
-protocol.  The difference is small and benchmark-specific, so it supports a
-narrow attribution to the soft-SFA construction rather than general
-superiority over local contrastive learning.
+protocol.  The small, benchmark-specific difference supports only a narrow
+empirical advantage for this soft-SFA construction, not general superiority
+over local contrastive learning.
 
 \IfFileExists{generated_local_supcon_results.tex}{%
   \input{generated_local_supcon_results.tex}%
@@ -649,7 +654,8 @@ superiority over local contrastive learning.
 The validation-only one-factor audit uses the canonical protocol.  Removing the temporal
 term loses 8.18 percentage points without collapsing rank, while fully
 shuffling the class-persistent order loses 7.55 points.  Temporal coherence is
-therefore the task-aligned teaching signal rather than an incidental regularizer.
+therefore the task-aligned teaching signal in this controlled setting, rather
+than an incidental regularizer.
 The two remaining terms prevent different degeneracies: without gated variance
 expansion, median feature variance falls to $7.7\times10^{-5}$; without
 decorrelation, variance remains high but effective rank falls to 2.8.  Batch
@@ -675,7 +681,7 @@ points (95\% Student-$t$ interval $[-0.42,-0.08]$).  The competitive result
 therefore does not require an exact same-batch operator, while the measured
 discrepancy prevents interpreting the lagged state as one.
 
-\begin{table}[t]
+\begin{table}[H]
 \centering
 \small
 \caption{Validation audit of the lateral signal (three seeds).  Alignment
@@ -699,10 +705,10 @@ with a paired Student-$t$ interval spanning zero ($[-0.37,0.05]$).  Thus the
 mean result is not an artifact of concatenating a strong first layer while
 ignoring a weak second layer, although five seeds do not resolve the small
 readout difference.
-\TeReL{}-S reaches $96.29\pm0.07$\% after only ten joint-training passes and
-beats its no-normalization random reference by 1.16 points ($[0.94,1.45]$), showing that temporal
-detachment trades some accuracy for a stricter locality boundary rather than
-destroying the mechanism.
+\TeReL{}-S reaches $96.29\pm0.07$\% after ten joint-training passes and
+beats its no-normalization random reference by 1.16 points ($[0.94,1.45]$).
+Despite its stricter locality boundary and different training schedule, this
+variant therefore retains a useful learned representation.
 
 The diagnostic geometry agrees with the probe result.  Canonical \TeReL{}
 raises nearest-centroid accuracy from 80.21\% for the no-normalization random
@@ -710,8 +716,9 @@ encoder to 95.55\%
 and the between/within-class scatter ratio from 0.24 to 0.70.  Its final layer
 is even more class concentrated (96.22\% centroid accuracy and 1.52 scatter
 ratio), while the all-layer representation keeps greater effective rank.  This
-is the expected soft-SFA tradeoff: persistent factors become accessible without
-forcing every output direction into the same class-compressed geometry.
+pattern is consistent with a soft-SFA tradeoff: persistent factors become
+accessible without forcing every output direction into the same
+class-compressed geometry.
 
 \begin{table}[H]
 \centering
@@ -737,38 +744,38 @@ BP (all) & 97.87 & 0.968 & 1.857 & 21.17 & 0.152 \\
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{figures/mnist-performance-comparison.pdf}
-  \caption{MNIST performance and paired contrasts.  \textbf{a:} individual test
-  seeds and means (horizontal bars).  Canonical \TeReL{} has a small
+  \caption{MNIST performance and paired contrasts across five paired test
+  seeds.  \textbf{a:} Seed values and means (horizontal bars).  Canonical
+  \TeReL{} has a small
   absolute-accuracy gap to BP, exceeds both the normalization-matched random
   encoder and the matched label-aware Local SupCon learner, and retains the
   mean result in its final layer; temporally local \TeReL{}-S remains above its
-  no-normalization random reference.  \textbf{b:} paired seed differences;
-  rows are canonical \TeReL{} minus the named comparator except for the
-  explicitly named \TeReL{}-S and readout contrasts.  Lines are paired 95\%
+  no-normalization random reference.  \textbf{b:} Paired seed differences in
+  the subtraction order shown by each row label.  Lines are paired 95\%
   Student-$t$ intervals and open circles are means.}
   \label{fig:mnist-performance}
 \end{figure}
 
 \subsection{Natural temporal order on PAMAP2}
 
-The chronological/shuffled PAMAP2 contrast was introduced to answer whether
+The chronological/shuffled PAMAP2 contrast tests whether
 the controlled temporal mechanism transfers when order is natural and labels
 are excluded from encoder batches.  Architecture, initialization, optimizer,
 sample count, and probe are held fixed; only encoder order changes.  The result
 is inconclusive: chronological and shuffled learning reach 0.307 and 0.312
 macro-F1, respectively, with a paired interval spanning both directions
 ($[-0.063,0.053]$).  All methods also exhibit a large subject-7 to subject-8
-shift.  We report this boundary because it is informative, but do not treat a
-single heterogeneous wearable split as a reversal of the controlled MNIST
-result or of the temporal-coherence motivation.  Broader natural-stream tests
-need multi-subject validation and stronger shift control.
+shift.  The interval supports neither an ordered nor a shuffled advantage, and
+the single heterogeneous split leaves natural-order transfer unresolved.
+Broader natural-stream tests require multi-subject validation and stronger
+shift control.
 
 \subsection{Streaming execution and cost}
 
 The samplewise configuration is selected on validation data over learning
 rate, state timescale, streaming normalization, accumulation, and exposure
 count.  The selected two-pass configuration reaches
-$95.14\pm0.04$\% accuracy across three seeds, with effective rank
+$95.14\pm0.04$\% validation accuracy across three seeds, with effective rank
 $112.8$ (seed range 106.6--120.9) and median feature variance 0.378.  It exceeds
 the matched no-normalization random validation mean by 0.29 points while retaining no
 temporal graph.
@@ -777,9 +784,9 @@ At every step, the previous activation, running moments, normalization state,
 and lateral matrix are detached; state size is unchanged by stream length.  The
 serial resource seed processes one observation per optimizer step and takes
 1,305 seconds, illustrating that a stock GPU/PyTorch implementation pays a
-large launch and update overhead.  This is evidence for quality-bearing
-samplewise learning and bounded storage, not a claim that the present software
-is throughput- or energy-optimal.  Encoder resource accounting for the main
+large launch and update overhead.  The result shows that samplewise learning
+can retain a useful representation with bounded storage; it does not establish
+throughput or energy efficiency.  Encoder resource accounting for the main
 methods is given in \cref{tab:encoder-resources,tab:samplewise-streaming}.
 
 \section{Limitations}
@@ -790,8 +797,8 @@ ordering is synthetic and label-derived, so its high accuracy establishes the
 efficacy of the local temporal teaching signal rather than label-free learning.
 PAMAP2 is a modest, distribution-shifted sensor benchmark, and its single
 subject-disjoint split cannot decide the broader natural-order question.
-Scaling to images, video, audio, and additional natural streams remains an
-empirical requirement.
+Scaling to images, video, audio, and additional natural streams requires direct
+evaluation.
 Activity-monitoring deployments would also require consent, privacy, and
 surveillance-risk analysis beyond this methodological benchmark.
 
@@ -808,18 +815,18 @@ its affine parameters are learned.  Depth-local credit assignment therefore
 does not imply a per-example local update for the headline model; the simpler
 outer-product factorization applies to the identity-normalizer variants.
 
-Finally, locality here concerns credit assignment:
-standard optimizers, exact activation derivatives, normalization, and
-synchronized matrix operations remain.
+The locality claim concerns credit assignment; standard optimizers, exact
+activation derivatives, normalization, and synchronized matrix operations
+remain.
 
 \section{Perspective and future directions}
 
 \paragraph{Natural order.}
 SFA's motivating regime is not class-sorted images but streams in which stable
-causes generate many changing observations.  The PAMAP2 result shows that
-adjacency alone is insufficient under severe subject shift; it does not remove
-the underlying opportunity.  Video under controlled viewpoint change,
-egocentric interaction, and continuous audio provide cleaner tests in which
+causes generate many changing observations.  The PAMAP2 result does not
+establish a benefit from adjacency under severe subject shift.  Cleaner tests
+include video under controlled viewpoint change, egocentric interaction, and
+continuous audio, where
 the timescale of the latent cause can be compared directly with the \TeReL{}
 state and chunk timescales.  A useful next study should vary those timescales
 rather than reduce natural order to one chronological-versus-shuffled number.
@@ -829,9 +836,9 @@ For the identity-normalizer and streaming forms, the rule's
 ingredients---presynaptic activity, an output-side teaching factor, leaky
 state, and no error path across depth---are structurally compatible with
 layer-local or event-driven execution.  \TeReL{}-S further removes the temporal
-graph, and our samplewise experiment shows that this stricter form can retain
-useful accuracy.  These are architectural reasons to investigate specialized
-implementations, not measurements of energy efficiency.  Low-rank lateral
+graph, and the samplewise experiment shows that this stricter form can retain
+useful accuracy.  These properties motivate specialized implementations but do
+not measure energy efficiency.  Low-rank lateral
 state, fused state updates, and optimizer choices designed for local arrays are
 the concrete engineering steps needed to test that perspective.
 
@@ -840,14 +847,14 @@ The temporal objective also suggests a recurrent representation module whose
 slow state supports prediction without receiving prediction gradients.  A
 valid recurrent comparison should isolate the
 representation and prediction paths, include matched random-state and BPTT
-controls, and repeat across seeds.  We retain this as a motivated extension of
-the mechanism, not as a result established here.
+controls, and repeat across seeds.  This is a motivated extension of the
+mechanism, not an established result.
 
 \section{Conclusion}
 
-Temporal coherence, variance preservation, and decorrelation form a useful
-representation-learning recipe that connects modern regularized
-self-supervision to SFA.  \TeReL{} turns that recipe into a concrete deep local
+Temporal coherence, variance preservation, and decorrelation form a
+representation-learning objective that connects modern regularized
+self-supervision to SFA.  \TeReL{} turns that structure into a concrete deep local
 rule: each nonlinear layer receives a temporal error, a gated neuron-local
 expansion signal, and a same-layer decorrelation signal.  Canonical \TeReL{}
 keeps short within-chunk temporal credit while cutting the error path across
@@ -856,19 +863,17 @@ state, although its dense lateral operator is quadratic in width.
 
 Canonical \TeReL{} reaches 97.30\% on MNIST, within 1.04 points of
 data-presentation-matched BP and 1.95 points above the BatchNorm-calibrated
-random encoder.  The final
-layer alone retains 97.14\%, while temporally local \TeReL{}-S reaches 96.29\%
-and its tuned samplewise form learns a high-rank 95.14\% validation
-representation.  Matched Local SupCon reaches 96.98\%, 0.32 points below
-\TeReL{} across the paired seeds.  One-factor controls further show that temporal coherence
-supplies the aligned signal, variance expansion prevents scale collapse, and
-decorrelation prevents redundancy collapse.  These results substantiate the
-paper's central intuition in a controlled label-ordered setting: temporal
+random encoder.  The final layer alone retains 97.14\%, while temporally local
+\TeReL{}-S reaches 96.29\%; its tuned samplewise form reaches 95.14\%
+validation accuracy with high effective rank.  Matched Local SupCon reaches 96.98\%, 0.32 points below
+\TeReL{} across the paired seeds.  One-factor controls further show that
+temporal coherence supplies the aligned signal, variance expansion prevents scale collapse, and
+decorrelation prevents redundancy collapse.  Within the controlled
+label-ordered setting, these results support the central intuition: temporal
 coherence, protected against collapse and redundancy, can train a
 two-hidden-layer representation with local credit assignment.  Whether that
-advantage transfers to natural streams remains unresolved; the secondary
-result and explicit cost accounting mark the next experiments without diluting
-the controlled finding.
+advantage transfers to natural streams remains unresolved.  Resolving it
+requires broader evaluation with explicit control of distribution shift.
 
 \bibliographystyle{tmlr}
 \bibliography{references}
@@ -941,8 +946,7 @@ The anonymous supplement contains the exact final configurations, selection
 ledger, seeds, per-seed JSON records, raw confusion matrices,
 hardware/software record, source, generated tables, and checksums.  Its
 \texttt{ARTIFACT\_README.md} gives portable commands and the exact provenance
-identifiers; the manuscript retains the scientific protocol rather than that
-identifier ledger.  Dataset files are not redistributed.
+identifiers.  Dataset files are not redistributed.
 
 \section{Secondary natural-stream controls}\label{app:pamap2}
 
@@ -950,8 +954,7 @@ The PAMAP2 encoder never receives activity labels.  The
 chronological and shuffled \TeReL{} rows differ only in order; the remaining
 rows locate their performance relative to untrained features, classical SFA,
 the exact in-batch covariance control, and end-to-end supervision.  All methods
-are weak on subject 8, confirming that the split is dominated by cross-subject
-shift.
+are weak on subject 8, consistent with substantial cross-subject shift.
 
 \begin{table}[H]
 \centering

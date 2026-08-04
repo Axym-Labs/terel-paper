@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 
 
+plt.rcParams.update({"pdf.fonttype": 42, "ps.fonttype": 42})
+
+
 PRIMARY = "#3F21B6"
 PURPLE_LIGHT = "#EEEAFE"
 INK = "#20212B"
@@ -58,7 +61,12 @@ def arrow(ax, start, end, *, color=INK, width=1.15, style="-|>", connection="arc
     return patch
 
 
-fig, axes = plt.subplots(1, 2, figsize=(12.2, 4.8), gridspec_kw={"width_ratios": [1.03, 1.17]})
+fig, axes = plt.subplots(
+    2,
+    1,
+    figsize=(7.05, 5.2),
+    gridspec_kw={"height_ratios": [1.05, 0.95]},
+)
 fig.patch.set_facecolor("white")
 
 # Panel A: exact mechanism.
@@ -127,24 +135,23 @@ ax = axes[1]
 ax.set_xlim(0, 1)
 ax.set_ylim(0, 1)
 ax.axis("off")
-ax.text(0.0, 0.98, "B  Two locality regimes, retained accuracy", fontsize=13, weight="bold", color=INK, va="top")
+ax.text(0.0, 0.98, "B  Two locality regimes and retained accuracy", fontsize=13, weight="bold", color=INK, va="top")
 ax.text(
     0.0,
-    0.91,
-    "Matched readouts compare methods; the samplewise variant isolates streaming.",
+    0.88,
+    "Matched readouts compare methods; the samplewise variant tests bounded-state execution.",
     fontsize=9.2,
     color=MUTED,
     va="top",
 )
 
 box(ax, (0.01, 0.58), 0.18, 0.17, "class chunks\n60 data\npasses", face=ORANGE_LIGHT, edge=ORANGE, size=8.8, weight="bold")
-box(ax, (0.28, 0.58), 0.21, 0.17, "canonical TeReL\ngreedy layers\nlive chunk time", face=PURPLE_LIGHT, edge=PRIMARY, size=8.8, weight="bold")
+box(ax, (0.28, 0.58), 0.21, 0.17, "canonical TeReL\nlayerwise training\nlive chunk history", face=PURPLE_LIGHT, edge=PRIMARY, size=8.8, weight="bold")
 box(ax, (0.58, 0.58), 0.18, 0.17, "matched all-layer\nlinear probe", face="white", edge=ORANGE, size=8.8)
 box(ax, (0.83, 0.60), 0.15, 0.13, "97.30%\n5 seeds", face=GREY, edge=RED, size=8.8, weight="bold")
 arrow(ax, (0.19, 0.665), (0.28, 0.665), color=ORANGE)
 arrow(ax, (0.49, 0.665), (0.58, 0.665), color=PRIMARY)
 arrow(ax, (0.76, 0.665), (0.83, 0.665), color=RED)
-ax.text(0.095, 0.53, "competitive comparison", ha="center", color=ORANGE, fontsize=8.7, weight="bold")
 
 box(ax, (0.01, 0.24), 0.18, 0.17, "one sample\nper update\n2 passes", face=GREEN_LIGHT, edge=GREEN, size=8.8, weight="bold")
 box(ax, (0.28, 0.24), 0.21, 0.17, "TeReL-S\ndetached time\nrunning norm", face=PURPLE_LIGHT, edge=PRIMARY, size=8.8, weight="bold")
@@ -153,9 +160,8 @@ box(ax, (0.83, 0.26), 0.15, 0.13, "95.14%\n3 val. seeds", face=GREY, edge=RED, s
 arrow(ax, (0.19, 0.325), (0.28, 0.325), color=GREEN)
 arrow(ax, (0.49, 0.325), (0.58, 0.325), color=PRIMARY)
 arrow(ax, (0.76, 0.325), (0.83, 0.325), color=RED)
-ax.text(0.095, 0.19, "samplewise audit", ha="center", color=GREEN, fontsize=8.7, weight="bold")
 
-plt.subplots_adjust(left=0.025, right=0.985, top=0.965, bottom=0.075, wspace=0.10)
+plt.subplots_adjust(left=0.025, right=0.985, top=0.985, bottom=0.035, hspace=0.16)
 
 source_directory = Path(__file__).resolve().parent
 fig.savefig(
