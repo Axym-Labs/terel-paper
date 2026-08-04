@@ -1,16 +1,20 @@
-# Temporal Regularized Learning paper
+# Temporal Regularized Learning: A Neuron-Local Rule for Deep Slow-Feature Learning
 
-Anonymous-review source for *Temporal Regularized Learning: Deep Local
-Soft-SFA with Constructed Temporal Supervision*.
+Anonymous-review source for the TeReL manuscript.
 
-The paper presents two method roles: canonical greedy, layer-local TeReL and
-temporally local, bounded-state TeReL-S. On label-ordered MNIST, canonical
-TeReL reaches 97.30% test accuracy across five seeds, versus 98.34% for
-data-presentation-matched backpropagation, 96.98% for matched Local SupCon, and
-95.35% for a BatchNorm-calibrated random encoder. Mechanism controls isolate
-the temporal, variance, and decorrelation contributions; the direct-covariance
-audit quantifies the lagged lateral signal. PAMAP2 remains a secondary
-natural-order stress test.
+The manuscript uses the self-contained `axym-publication.sty` template; no
+venue style file is required for the anonymous build.
+
+TeReL realizes Slow Feature Analysis as a soft objective for deep neuron-local
+learning. Canonical TeReL retains short temporal gradients within a chunk;
+TeReL-S detaches the temporal reference and permits bounded-state samplewise
+execution. Under label-constructed MNIST order, canonical TeReL attains 97.30%
+test accuracy across five seeds, compared with 98.34% for
+data-presentation-matched backpropagation, 96.98% for Local SupCon, and 95.35%
+for a BatchNorm-calibrated random encoder. Mechanism interventions separate the
+roles of temporal coherence, variance expansion, and decorrelation. A
+direct-covariance control measures the accuracy of the lagged lateral signal,
+and PAMAP2 provides a secondary natural-order stress test.
 
 Build the PDF with:
 
@@ -37,6 +41,6 @@ python figures/mnist-performance-comparison.py \
 python figures/terel-method-overview.py
 ```
 
-The anonymous supplement contains the pinned environment, exact source
-records, selection ledger, portable generation commands, and
-`ARTIFACT_README.md` with detailed provenance.
+The anonymous supplement contains the pinned environment, source records,
+selection ledger, portable generation commands, and detailed provenance in
+`ARTIFACT_README.md`.

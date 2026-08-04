@@ -1,6 +1,6 @@
 \begin{table}[H]
 \centering
-\caption{Matched label-aware comparison on MNIST test accuracy (\%, five seeds). Local SupCon receives all same-label positives in each minibatch; both methods have layer-local credit, the same architecture, 60 data presentations, and the same all-layer probe.}
+\caption{MNIST test accuracy for the matched label-aware comparison across five seeds. Local SupCon uses all same-label positives in each minibatch. Both methods stop credit at layer boundaries and use the same architecture, 60 data presentations, and concatenated-layer probe.}
 \label{tab:local-supcon-comparison}
 \begin{tabular}{lc}
 \toprule
@@ -12,5 +12,5 @@ Local SupCon & 96.98 $\pm$ 0.10 \\
 \TeReL{} $-$ Local SupCon & 0.32 [0.13, 0.52] \\
 \bottomrule
 \end{tabular}
-\par\smallskip\footnotesize The bracketed contrast is a paired 95\% Student-$t$ interval.
+\par\smallskip\footnotesize The bracketed value is a paired 95\% Student-$t$ interval.
 \end{table}

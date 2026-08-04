@@ -1,7 +1,7 @@
 \begin{table}[H]
 \centering
 \small
-\caption{Raw MNIST test accuracies (\%) in seed order 1101, 1202, 1303, 1404, 1505.}
+\caption{MNIST test accuracy for seeds 1101, 1202, 1303, 1404, and 1505, in that order.}
 \label{tab:mnist-raw}
 \begin{tabular}{ll}
 \toprule
@@ -19,7 +19,7 @@ Backpropagation (all layers) & 98.32, 98.32, 98.30, 98.28, 98.47 \\
 \begin{table}[H]
 \centering
 \small
-\caption{Encoder-fit accounting averaged over five test seeds. Examples count sample presentations. MAC is the declared linear plus same-layer proxy, not a hardware energy measurement.}
+\caption{Resource use during encoder fitting, averaged across five seeds. Examples count sample presentations. MAC denotes the declared linear and same-layer operation proxy, not energy use.}
 \label{tab:encoder-resources}
 \begin{tabular}{lrrrrr}
 \toprule
@@ -37,8 +37,9 @@ Backpropagation (all layers) & 3.00 & 11760 & 43.4 & 225.4 & 4815.4 \\
 \begin{table}[H]
 \centering
 \small
-\caption{Training-state decomposition in MiB. Model parameters are those fitted during encoder training (the BP entry therefore includes its supervised head). Algorithm state is the TeReL lateral/statistics state after separating normalization buffers; optimizer and algorithm state are training-only. Inference encoder state retains hidden-layer parameters and normalization buffers but discards the BP head and TeReL state.}
+\caption{Training state in MiB. Model parameters include every parameter fitted during encoder training, including the supervised head for backpropagation. Algorithm state contains the \TeReL{} lateral and statistical state but excludes normalization buffers. Optimizer and algorithm state are training-only. The inference encoder retains hidden-layer parameters and normalization buffers, but discards the supervised head and \TeReL{} state.}
 \label{tab:training-state-decomposition}
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{lrrrrr}
 \toprule
 Method & Model params & Optimizer & Algorithm & Norm. & Inference encoder \\
@@ -54,7 +55,7 @@ Backpropagation (all layers) & 2.050 & 4.100 & 0.000 & 0.006 & 2.046 \\
 
 \begin{table}[H]
 \centering
-\caption{Tuned samplewise streaming TeReL on the validation split (three seeds). The serial seed supplies time and memory accounting; concurrent repetition timings are excluded.}
+\caption{Samplewise \TeReL{}-S on the validation split across three seeds. The serial run provides the time and memory measurements; timings from concurrent repetitions are excluded.}
 \label{tab:samplewise-streaming}
 \begin{tabular}{lccc}
 \toprule

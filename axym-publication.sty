@@ -1,0 +1,110 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{axym-publication}[2026/07/15 Axym publication templates]
+
+\RequirePackage[
+  letterpaper,
+  left=2.2cm,
+  right=2.2cm,
+  top=1in,
+  textheight=9in,
+  headheight=14pt,
+  headsep=25pt,
+  footskip=30pt
+]{geometry}
+\RequirePackage[T1]{fontenc}
+\RequirePackage{mathpazo}
+\RequirePackage{microtype}
+\RequirePackage{graphicx}
+\RequirePackage{caption}
+\RequirePackage{xcolor}
+\RequirePackage{hyperref}
+\RequirePackage{amsmath,amssymb}
+\RequirePackage{booktabs}
+
+% Match the accepted wide TRL candidate rather than article.cls's slightly
+% larger default leading at 11 pt.
+\makeatletter
+\renewcommand{\normalsize}{%
+  \@setfontsize\normalsize{11pt}{13.2pt}%
+  \abovedisplayskip 8pt plus 2pt minus 5pt
+  \abovedisplayshortskip 0pt plus 3pt
+  \belowdisplayskip \abovedisplayskip
+  \belowdisplayshortskip 5pt plus 3pt minus 3pt
+}
+\renewcommand{\small}{\@setfontsize\small{10pt}{12pt}}
+\renewcommand{\footnotesize}{\@setfontsize\footnotesize{9pt}{11pt}}
+\normalsize
+\makeatother
+
+\definecolor{AxymPrimary}{HTML}{3F21B6}
+\definecolor{AxymTitle}{HTML}{003262}
+\definecolor{AxymInk}{HTML}{111827}
+\definecolor{AxymMuted}{HTML}{4B5563}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=AxymPrimary,
+  citecolor=AxymPrimary,
+  urlcolor=AxymPrimary
+}
+\urlstyle{same}
+
+\captionsetup{
+  font={small},
+  labelfont=bf,
+  justification=raggedright,
+  singlelinecheck=false
+}
+
+\newcommand{\publicationtitle}[1]{\def\PublicationTitle{#1}}
+\newcommand{\publicationauthors}[1]{\def\PublicationAuthors{#1}}
+\newcommand{\publicationaffiliations}[1]{\def\PublicationAffiliations{#1}}
+\newcommand{\publicationdate}[1]{\def\PublicationDate{#1}}
+
+\publicationtitle{Publication title}
+\publicationauthors{Author Name}
+\publicationaffiliations{$^1$Affiliation, City, Country}
+\publicationdate{\today}
+
+\newcommand{\makepublicationtitle}{%
+  \thispagestyle{empty}%
+  \noindent{\color{AxymInk}\rule{\linewidth}{1pt}}\par
+  \vspace{1.15em}%
+  {\raggedright\fontsize{21pt}{23pt}\selectfont\bfseries
+   \color{AxymTitle}\PublicationTitle\par}
+  \vspace{0.8em}%
+  {\raggedright\fontsize{11pt}{15pt}\selectfont\bfseries
+   \color{AxymInk}\PublicationAuthors\par}
+  \ifx\PublicationAffiliations\empty\else
+    \vspace{0.05em}%
+    {\raggedright\fontsize{10pt}{12pt}\selectfont
+     \color{AxymMuted}\PublicationAffiliations\par}%
+  \fi
+  \ifx\PublicationDate\empty\else
+    \vspace{0.1em}%
+    {\raggedright\fontsize{10pt}{12pt}\selectfont
+     \color{AxymMuted}\PublicationDate\par}%
+  \fi
+  \vspace{0.45em}%
+  \noindent{\color{AxymInk}\rule{\linewidth}{1pt}}\par
+}
+
+\newcommand{\publicationleadfigure}[3][0.20\textheight]{%
+  \par\vspace{1em}%
+  \begin{center}
+    \includegraphics[width=\linewidth,height=#1,keepaspectratio]{#2}
+  \end{center}
+  \refstepcounter{figure}%
+  {\fontsize{10pt}{12pt}\selectfont
+   \noindent\textbf{Figure \thefigure:} #3\par}%
+  \vspace{0.85em}%
+}
+
+\newcommand{\publicationabstract}[1]{%
+  \par
+  \begin{center}
+    {\fontsize{11pt}{13pt}\selectfont\bfseries Abstract\par}
+  \end{center}
+  \vspace{0.15em}%
+  {\fontsize{10pt}{12pt}\selectfont #1\par}%
+}

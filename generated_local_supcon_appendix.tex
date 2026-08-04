@@ -1,7 +1,7 @@
 \begin{table}[H]
 \centering
 \small
-\caption{Complete validation selection for Local SupCon (accuracy \%, three seeds). Bold marks the predeclared winner.}
+\caption{Local SupCon validation grid across three seeds. Bold marks the configuration selected before test evaluation.}
 \label{tab:local-supcon-validation}
 \begin{tabular}{rrc}
 \toprule
@@ -20,7 +20,7 @@ Learning rate & Temperature & Accuracy \\
 \begin{table}[H]
 \centering
 \small
-\caption{Local SupCon five-seed evaluation values and resource state. Inference retains encoder parameters and batch-normalization buffers; optimizer state is training-only.}
+\caption{Local SupCon test values and resource state across five seeds. Inference retains the encoder parameters and BatchNorm buffers; optimizer state is used only during training.}
 \label{tab:local-supcon-raw}
 \begin{tabular}{lc}
 \toprule

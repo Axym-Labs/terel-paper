@@ -1,6 +1,6 @@
 \begin{table}[H]
 \centering
-\caption{MNIST test accuracy (\%, five seeds). All-layer readout access is matched across methods; TeReL last-layer access is a secondary audit. Values are mean $\pm$ sample SD.}
+\caption{MNIST test accuracy across five seeds. Every method uses the same concatenated-layer readout, except the explicitly marked final-layer \TeReL{} row. Values report mean $\pm$ sample standard deviation.}
 \label{tab:mnist-primary}
 \begin{tabular}{lc}
 \toprule
@@ -17,7 +17,7 @@ Backpropagation (all layers) & 98.34 $\pm$ 0.08 \\
 
 \begin{table}[H]
 \centering
-\caption{Paired test-set accuracy differences in percentage points with 95\% Student-$t$ intervals over the five seed-paired differences.}
+\caption{Paired differences in MNIST test accuracy. Values are percentage points with 95\% Student-$t$ intervals over five seed-paired differences.}
 \label{tab:mnist-contrasts}
 \begin{tabular}{lc}
 \toprule
