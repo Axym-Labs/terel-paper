@@ -1,4 +1,4 @@
-"""Render the corrected TeReL figure from the frozen v2 and v3 analyses."""
+"""Render the corrected TeReL figure from the frozen v2--v4 analyses."""
 
 from __future__ import annotations
 
@@ -16,12 +16,18 @@ NEUTRAL = "#747474"
 DARK = "#252525"
 
 
-def render(analysis_path: Path, review_analysis_path: Path, output_stem: Path) -> None:
+def render(
+    analysis_path: Path,
+    review_analysis_path: Path,
+    normalization_analysis_path: Path,
+    output_stem: Path,
+) -> None:
     data = json.loads(analysis_path.read_text())
     review = json.loads(review_analysis_path.read_text())
+    normalization = json.loads(normalization_analysis_path.read_text())
     plt.style.use(Path(__file__).with_name("paper.mplstyle"))
     methods = [
-        ("random-all", "Random", NEUTRAL),
+        ("random-bn", "Random\n+BN", NEUTRAL),
         ("terel-s-all", "TeReL-S", SECONDARY),
         ("local-supcon", "Local\nSupCon", NEUTRAL),
         ("terel-last", "TeReL\nlast", SECONDARY),
@@ -29,8 +35,8 @@ def render(analysis_path: Path, review_analysis_path: Path, output_stem: Path) -
         ("bp-all", "BP", DARK),
     ]
     contrasts = [
-        ("terel-minus-random", r"TeReL $-$ random", PRIMARY),
-        ("terel-s-minus-random", r"TeReL-S $-$ random", SECONDARY),
+        ("terel-minus-random-bn", r"TeReL $-$ random+BN", PRIMARY),
+        ("terel-s-minus-random", r"TeReL-S $-$ random (no BN)", SECONDARY),
         ("terel-minus-local-supcon", r"TeReL $-$ Local SupCon", PRIMARY),
         ("terel-minus-bp", r"TeReL $-$ BP", PRIMARY),
         ("terel-last-minus-all", r"last $-$ all", SECONDARY),
@@ -42,7 +48,12 @@ def render(analysis_path: Path, review_analysis_path: Path, output_stem: Path) -
 
     ax = axes[0]
     for x, (key, label, color) in enumerate(methods):
-        record = review["local_supcon"] if key == "local-supcon" else data["methods"][key]
+        if key == "local-supcon":
+            record = review["local_supcon"]
+        elif key == "random-bn":
+            record = normalization["random_bn_calibrated"]
+        else:
+            record = data["methods"][key]
         values = 100 * np.asarray(record["raw"], dtype=float)
         ax.scatter(
             x + np.linspace(-0.10, 0.10, len(values)), values, s=17,
@@ -64,6 +75,8 @@ def render(analysis_path: Path, review_analysis_path: Path, output_stem: Path) -
         record = (
             review["terel_minus_local_supcon"]
             if key == "terel-minus-local-supcon"
+            else normalization["terel_minus_random_bn"]
+            if key == "terel-minus-random-bn"
             else data["contrasts"][key]
         )
         raw = 100 * np.asarray(record["raw_differences"], dtype=float)
@@ -99,7 +112,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("analysis", type=Path)
     parser.add_argument("review_analysis", type=Path)
+    parser.add_argument("normalization_analysis", type=Path)
     parser.add_argument("--output", type=Path,
                         default=Path(__file__).with_name("corrected-performance-v2"))
     args = parser.parse_args()
-    render(args.analysis, args.review_analysis, args.output)
+    render(
+        args.analysis,
+        args.review_analysis,
+        args.normalization_analysis,
+        args.output,
+    )

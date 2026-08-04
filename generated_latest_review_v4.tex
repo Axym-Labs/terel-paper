@@ -1,0 +1,18 @@
+\begin{table}[t]
+\centering
+\small
+\caption{Normalization-matched random-control audit on MNIST test accuracy (\%, five paired seeds). The BatchNorm-calibrated encoder keeps all weights and affine normalization parameters at initialization; only train-split running statistics are updated. Values are mean $\pm$ sample SD, and contrasts use 95\% Student-$t$ intervals.}
+\label{tab:normalization-control}
+\begin{tabular}{lc}
+\toprule
+Method or contrast & Accuracy / difference \\
+\midrule
+Random, no normalization & 95.13 $\pm$ 0.27 \\
+BatchNorm-calibrated random & 95.35 $\pm$ 0.19 \\
+\TeReL{} & 97.30 $\pm$ 0.07 \\
+\midrule
+\TeReL{} $-$ calibrated random & 1.95 [1.64, 2.25] \\
+calibrated $-$ no-normalization random & 0.22 [-0.08, 0.52] \\
+\bottomrule
+\end{tabular}
+\end{table}

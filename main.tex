@@ -17,6 +17,7 @@
 \usepackage{array}
 \usepackage{hyperref}
 \usepackage[capitalize,nameinlink]{cleveref}
+\hypersetup{hidelinks}
 
 \newtheorem{proposition}{Proposition}
 \newtheorem{definition}{Definition}
@@ -63,7 +64,7 @@ experiments are rerun from an optimizer-corrected implementation
 under a validation-selected, manifest-locked protocol.  On label-ordered
 MNIST, canonical \TeReL{} reaches $97.30\pm0.07$\% test accuracy across five
 seeds, versus $98.34\pm0.08$\% for data-presentation-matched backpropagation and
-$95.13\pm0.27$\% for matched random features.  Restricting the readout to the
+$95.35\pm0.19$\% for a normalization-matched random encoder.  Restricting the readout to the
 last layer retains $97.14\pm0.10$\%, and \TeReL{}-S reaches
 $96.29\pm0.07$\%.  A matched label-aware Local SupCon learner reaches
 $96.98\pm0.10$\%; the paired \TeReL{} advantage is 0.32 points.  Validation
@@ -133,14 +134,16 @@ The paper makes five contributions:
 \begin{enumerate}
   \item We formulate \TeReL{} as a deep, layer-local soft-SFA rule and locate
   its contribution relative to SFA, Incremental SFA, Bio-SFA, VICReg, and
-  blockwise self-supervised learning.
-  \item We give the implemented objective, exact activation and weight
-  gradients for detached and undetached time, the detached state updates, and
+  gradient-isolated predictive, contrastive, and blockwise self-supervised learning.
+  \item We give the implemented objective, exact activation and local parameter
+  gradients for detached and undetached time, including the canonical
+  within-layer normalization Jacobian, the detached state updates, and
   a quantitative error decomposition for the shifted lateral heuristic, and
   measure the successful lagged operator against its same-batch direction.
   \item We recover competitive constructed-MNIST performance from an optimizer-corrected
   implementation: canonical \TeReL{} lies 1.04 percentage points behind
-  data-presentation-matched backpropagation and 2.17 points above matched random features.
+  data-presentation-matched backpropagation and 1.95 points above a
+  normalization-matched random encoder.
   A matched local supervised-contrastive comparator and a direct-covariance
   control delimit what this result attributes to the soft-SFA construction.
   \item We demonstrate tuned batch-size-one learning with fixed state and no
@@ -155,11 +158,17 @@ The paper makes five contributions:
 
 \subsection{From constrained SFA to a soft local objective}
 
-Let $x_t$ be a temporal stream and let layer $\ell$ produce
+Let $x_t$ be a temporal stream and let layer $\ell$ produce, for local
+minibatch $\mathcal B$,
 \begin{equation}
   a_t^{\ell}=W^{\ell}z_t^{\ell-1}+c^{\ell},\qquad
-  z_t^{\ell}=\phi(a_t^{\ell}).
+  h_{\mathcal B}^{\ell}=N_{\eta^\ell,\mathcal B}(a_{\mathcal B}^{\ell}),\qquad
+  z_t^{\ell}=\phi(h_t^{\ell}).
 \end{equation}
+Here $N$ is either the identity or the within-layer normalizer with affine
+parameters $\eta^\ell$.  The canonical encoder uses training-mode BatchNorm,
+so $N_{\eta,\mathcal B}$ couples examples inside the current local minibatch;
+it does not introduce an error path from a later layer.
 SFA searches for features that change slowly while excluding constant and
 duplicated solutions.  In one common statement it minimizes
 $\mathbb{E}\|z_t-z_{t-1}\|_2^2$ subject to zero mean, unit variance, and
@@ -228,26 +237,38 @@ an ablation.
 
 \subsection{Exact local gradients}\label{sec:gradients}
 
-Write $g=[\gamma-v]_+$.  For \TeReL{}-S the activation gradient is
+Write $g=[\gamma-v]_+$.  For \TeReL{}-S the loss gradient with respect to the
+post-activation is
 \begin{equation}
 e_t=\frac{2\lambda_S I_t}{N_ID}(z_t-p_t)
 -\frac{2\lambda_V}{BD}g\odot(z_t-m)
 +\frac{\lambda_C}{BD}Aq_t.
 \label{eq:local-gradient}
 \end{equation}
-The input $z_t^{\ell-1}$ to each learned layer is detached.  Consequently,
+Let $r_s=e_s\odot\phi'(h_s^\ell)$ and let
+$J_{st}^{N}=\partial h_s^\ell/\partial a_t^\ell$ be the minibatch Jacobian
+block of the within-layer normalizer.  The input $z_t^{\ell-1}$ to each learned
+layer is detached.  The exact same-layer chain rule is therefore
 \begin{equation}
+u_t=\sum_{s\in\mathcal B}(J_{st}^{N})^\top r_s,\qquad
 \frac{\partial L^{\ell}}{\partial W^{\ell}}
-=\sum_t\big(e_t\odot\phi'(a_t^{\ell})\big)
-  (z_t^{\ell-1})^\top,
+=\sum_t u_t(z_t^{\ell-1})^\top,
 \qquad
 \frac{\partial L^{\ell}}{\partial c^{\ell}}
-=\sum_t e_t\odot\phi'(a_t^{\ell}).
+=\sum_t u_t,
+\qquad
+\frac{\partial L^{\ell}}{\partial\eta^\ell}
+=\sum_s\left(\frac{\partial h_s^\ell}{\partial\eta^\ell}\right)^\top r_s.
 \label{eq:weight-gradient}
 \end{equation}
-This is a presynaptic factor times an output-side teaching factor.  Autograd
-computes $\phi'$ exactly; our derivation does not assume a linear activation.
-No later-layer error enters \cref{eq:weight-gradient}.
+For $N=\mathrm{Id}$, $J_{st}^{N}=\delta_{st}I$ and the weight update reduces
+to the presynaptic outer product
+$\sum_t(e_t\odot\phi'(a_t^\ell))(z_t^{\ell-1})^\top$.  Training-mode
+BatchNorm instead mixes the output-side factors across examples in
+$\mathcal B$ and also updates $\eta^\ell$.  Autograd evaluates this local
+Jacobian exactly.  In both cases no later-layer error enters
+\cref{eq:weight-gradient}; the simple per-example factorization applies only
+to the identity-normalizer case.
 
 Canonical \TeReL{} leaves adjacent $p_t=z_{t-1}$ inside the short chunk graph.
 Its temporal contribution is
@@ -287,16 +308,18 @@ temporal state.  No activation graph survives the call.
 \caption{One \TeReL{}-S step for a deep encoder.}
 \label{alg:terel}
 \begin{algorithmic}[1]
-\Require input batch/stream segment $X$, boundary flags $b$, layer states
+\Require input batch/stream segment $X$, boundary flags $b$, layer parameters
+  $\{W^\ell,c^\ell,\eta^\ell\}$, and states
   $\{m^{\ell},v^{\ell},A^{\ell},p^{\ell}\}$
 \State $h\gets X$
 \For{layer $\ell=1,\ldots,L$}
-  \State $z^{\ell}\gets\phi(W^{\ell}\stopgrad(h)+c^{\ell})$
+  \State $z^{\ell}\gets\phi(N_{\eta^\ell,\mathcal B}(W^{\ell}\stopgrad(h)+c^{\ell}))$
   \State construct detached predecessors $p_t^{\ell}$ and valid pairs from $b$
   \State compute $L^{\ell}$ by \cref{eq:terel}
   \State $h\gets\stopgrad(z^{\ell})$
 \EndFor
-\State backpropagate $\sum_{\ell}L^{\ell}$ only within each layer; step optimizer
+\State backpropagate $\sum_{\ell}L^{\ell}$ only within each layer, including
+  $N_{\eta^\ell,\mathcal B}$; step optimizer
 \For{layer $\ell=1,\ldots,L$}
   \State update detached state by \cref{eq:mean-update,eq:var-update,eq:lat-update}
 \EndFor
@@ -378,6 +401,24 @@ trace learning also exploits temporal persistence~\cite{foldiak1991}; its
 positive activation trace is not algebraically the same as the signed
 difference in \cref{eq:local-gradient}.
 
+\paragraph{Gradient-isolated predictive and contrastive learning.}
+Greedy InfoMax trains a stack of gradient-isolated modules with local InfoNCE
+objectives that predict across the natural order of images, audio, and
+video~\cite{lowe2019}.  It is therefore a direct precedent for combining
+temporal structure with greedy depth-local representation learning.  CLAPP
+makes contrastive prediction causal and local in both space and time through
+pre/post activity, predictive dendritic input, and broadcast modulation, while
+still relying on positive and negative examples~\cite{illing2021}.  LoCo instead
+improves paired-view local contrastive learning with overlapping blocks, which
+allows the next block's local loss to influence parameters in the overlap and
+therefore relaxes strict gradient isolation~\cite{xiong2020}.  These methods
+preclude claiming either local temporal prediction or gradient-isolated deep
+learning as new here.  Relative to them, \TeReL{} studies a noncontrastive
+soft-SFA loss with explicit variance and redundancy controls; \TeReL{}-S uses
+no negative set or predictive decoder, but pays for a dense lagged same-layer
+operator.  Our constructed MNIST protocol is also label-assisted through
+ordering, unlike their principal unlabeled settings.
+
 \paragraph{Regularized and blockwise self-supervision.}
 VICReg and Barlow Twins use variance/covariance or cross-correlation penalties
 to prevent collapse without negatives~\cite{bardes2022,zbontar2021}.  Blockwise
@@ -415,6 +456,9 @@ Method & Temporal objective & Execution & Learned mapping & Auxiliary state\\
 Batch SFA & derivative minimization & batch eigensystem & linear & covariance and whitening\\
 IncSFA & derivative minimization & sample based & linear; deep cascades possible & incremental PCA and MCA state\\
 Bio-SFA & derivative minimization & online neural dynamics & linear network in reported derivation & synaptic/dual variables\\
+Greedy InfoMax & natural-order InfoNCE & greedy isolated modules & deep nonlinear modules & context/predictor and negatives\\
+CLAPP & causal contrastive prediction & local in depth and time & deep nonlinear layers & predictive input, modulation, negatives\\
+LoCo & paired-view contrastive & overlapping minibatch blocks & deep nonlinear blocks & projection heads and negatives\\
 Blockwise SSL & paired-view invariance & mini-batch blocks & deep nonlinear blocks & batch statistics\\
 \TeReL{} family & temporal soft-SFA & sample or minibatch & deep nonlinear layers & $D^2+4D+1$ per layer\\
 \bottomrule
@@ -425,8 +469,9 @@ Blockwise SSL & paired-view invariance & mini-batch blocks & deep nonlinear bloc
 
 The experiments answer four questions.  First, after restoring the intended
 training schedule and optimizer state, how does canonical \TeReL{} compare with
-data-presentation-matched backpropagation, its untrained representation, and a
-label-aware local learner under the constructed supervision?  Second, is that
+data-presentation-matched backpropagation, normalization-matched and
+no-normalization random encoders, and a label-aware local learner under the
+constructed supervision?  Second, is that
 result carried only by early layers or retained by the final layer?  Third, can
 \TeReL{}-S learn non-collapsed representations one sample at a time with bounded
 state?  Fourth, as a secondary stress test, does the temporal-coherence
@@ -464,7 +509,8 @@ the controlled MNIST comparison.
 \subsection{Models, baselines, and readouts}
 
 The primary encoder is $784\rightarrow512\rightarrow256$ with LeakyReLU
-(negative slope 0.01).  Canonical \TeReL{} uses batch normalization, live
+(negative slope 0.01).  Canonical \TeReL{} uses affine batch normalization
+(update momentum 0.1), live
 temporal pairs within chunks, and greedy layerwise training for 30 epochs per
 layer.  Thus both its encoder and the matched BP encoder receive 60 complete
 training-set presentations.  Its AdamW learning rate is $3\times10^{-4}$,
@@ -478,8 +524,26 @@ optimizer, batch size, and 60 data passes, trained end to end with cross
 entropy.  \TeReL{}-S uses detached temporal references, joint local training,
 no batch normalization, $(1,5,1)$, and a separately validated ten-pass
 schedule.  It is an intentionally lean temporally local variant, so its compute
-is reported rather than described as matched to BP.  Random features retain
-the same seed-specific hidden weights without encoder updates.
+is reported rather than described as matched to BP.  The original random
+reference retains the same seed-specific hidden weights but omits normalization;
+we keep it because it matches the no-normalization \TeReL{}-S architecture.
+The acceptance-critical random control instead includes the canonical affine
+BatchNorm modules.  Its hidden weights and biases remain at initialization, as
+do BatchNorm scale one and offset zero.  Under \texttt{no\_grad}, one pass over
+the 50,000 training examples in stored order (batch size 256) calibrates only
+running means and variances with update momentum 0.1 (0.9 retention).  The
+model then enters evaluation mode, and those
+fixed train-only statistics are exposed to the same all-layer probe and test
+examples.  This is data-dependent normalization, not an encoder-parameter
+update.
+
+Canonical minibatches concatenate randomly permuted class-homogeneous chunks,
+so each batch can mix classes while BatchNorm communicates across all 256 local
+examples.  Under greedy training, only the active layer's BatchNorm is in
+training mode: layer-one statistics are fixed before layer two is trained.
+Representation extraction and probing use evaluation mode with the final
+running statistics and learned affine parameters.  Thus BatchNorm changes the
+within-layer information path but never carries error across depth.
 
 Local SupCon supplies a label-aware local comparison for the constructed MNIST
 regime.  Each layer receives a supervised-contrastive loss over every same-label
@@ -528,8 +592,10 @@ interval, and a percentile 95\% bootstrap interval from 10,000 resamples
 intervals are primary and bootstrap intervals are retained as a sensitivity
 analysis.  The preregistered competitive gate places canonical \TeReL{} within
 1.5 percentage points of BP; this was an operational absolute-accuracy target
-chosen before v2, not a claim of error-rate parity.  The learned
-representation gate requires improvement over matched random features.
+chosen before v2, not a claim of error-rate parity.  The original v2 learned-
+representation gate requires improvement over the no-normalization random
+encoder; the later acceptance-critical audit repeats that test with canonical
+BatchNorm included.
 Non-collapse requires every canonical seed to have effective rank at least 20,
 median variance at least 0.05, and active fraction at least 0.25.
 
@@ -549,6 +615,12 @@ candidates and both lateral controls are run on validation seeds 101, 202, and
 five test seeds are evaluated.  These additions do not alter, select among, or
 rerun any v2 headline method.
 
+The normalization audit is another one-row extension.  Its calibration
+treatment and the same five test seeds were fixed a priori by the review rather
+than selected by validation performance.  The manifest was frozen at a clean
+execution commit before the test gate opened; exactly five random-encoder runs
+were executed, and no v2 or v3 record was changed or rerun.
+
 \section{Results}\label{sec:results}
 
 \IfFileExists{generated_results_v2.tex}{%
@@ -564,14 +636,23 @@ rerun any v2 headline method.
 Canonical \TeReL{} reaches $97.30\pm0.07$\%, compared with
 $98.34\pm0.08$\% for matched BP.  The paired gap is 1.04 percentage points
 (95\% paired Student-$t$ interval $[0.99,1.08]$), inside the frozen 1.5-point
-competitive gate.  Relative to the identical untrained representation,
-\TeReL{} gains 2.17 points ($[1.83,2.51]$).  In error-rate terms, however,
+competitive gate.  Relative to the BatchNorm-calibrated random encoder,
+\TeReL{} gains 1.95 points ($[1.64,2.25]$).  The calibrated random mean is
+$95.35\pm0.19$\%, compared with $95.13\pm0.27$\% for the retained
+no-normalization random reference; their paired difference is 0.22 points
+($[-0.08,0.52]$).  In error-rate terms, however,
 its 2.70\% error is 63\% higher than BP's 1.66\%; ``near'' refers only to the
 predeclared absolute-accuracy gate, not error parity.  All five seeds satisfy the
 non-collapse criteria, and every intended layer and normalization group has a
 nonzero parameter update.  The corrected evidence therefore supports the
 paper's central empirical statement within this constructed MNIST regime: a
 two-hidden-layer network trained by layer-local soft-SFA reaches 97.30\%.
+
+\IfFileExists{generated_latest_review_v4.tex}{%
+  \input{generated_latest_review_v4.tex}%
+}{%
+  The normalization-control table is generated from the frozen v4 records.
+}
 
 \subsection{Matched label-aware local comparator}
 
@@ -648,12 +729,13 @@ mean result is not an artifact of concatenating a strong first layer while
 ignoring a weak second layer, although five seeds do not resolve the small
 readout difference.
 \TeReL{}-S reaches $96.29\pm0.07$\% after only ten joint-training passes and
-beats random features by 1.16 points ($[0.94,1.45]$), showing that temporal
+beats its no-normalization random reference by 1.16 points ($[0.94,1.45]$), showing that temporal
 detachment trades some accuracy for a stricter locality boundary rather than
 destroying the mechanism.
 
 The diagnostic geometry agrees with the probe result.  Canonical \TeReL{}
-raises nearest-centroid accuracy from 80.21\% for random features to 95.55\%
+raises nearest-centroid accuracy from 80.21\% for the no-normalization random
+encoder to 95.55\%
 and the between/within-class scatter ratio from 0.24 to 0.70.  Its final layer
 is even more class concentrated (96.22\% centroid accuracy and 1.52 scatter
 ratio), while the all-layer representation keeps greater effective rank.  This
@@ -672,7 +754,7 @@ $|\rho_{\mathrm{off}}|$ is mean absolute off-diagonal correlation.}
 \toprule
 Method & Centroid (\%) & B/W & Sel. & $r_{\mathrm{eff}}$ & $|\rho_{\mathrm{off}}|$ \\
 \midrule
-Random (all) & 80.21 & 0.241 & 1.239 & 33.84 & 0.101 \\
+Random, no norm. (all) & 80.21 & 0.241 & 1.239 & 33.84 & 0.101 \\
 \TeReL{}-S (all) & 92.04 & 0.101 & 0.843 & 142.32 & 0.057 \\
 \TeReL{} (all) & 95.55 & 0.695 & 1.704 & 37.35 & 0.103 \\
 \TeReL{} (last) & 96.22 & 1.516 & 2.567 & 18.86 & 0.161 \\
@@ -686,9 +768,10 @@ BP (all) & 97.87 & 0.968 & 1.857 & 21.17 & 0.152 \\
   \includegraphics[width=\linewidth]{figures/corrected-performance-v2.pdf}
   \caption{Corrected confirmatory evidence.  \textbf{a:} individual MNIST test
   seeds and means (horizontal bars).  Canonical \TeReL{} recovers a small
-  absolute-accuracy gap to BP, exceeds the matched label-aware Local SupCon
-  learner, and retains the mean result in its final layer; temporally local
-  \TeReL{}-S remains above random features.  \textbf{b:} paired seed
+  absolute-accuracy gap to BP, exceeds both the normalization-matched random
+  encoder and the matched label-aware Local SupCon learner, and retains the
+  mean result in its final layer; temporally local \TeReL{}-S remains above its
+  no-normalization random reference.  \textbf{b:} paired seed
   differences; lines are paired 95\% Student-$t$ intervals and open circles are
   means.}
   \label{fig:corrected-performance}
@@ -716,7 +799,7 @@ learning rate, state timescale, streaming normalization, accumulation, and
 exposure count on validation data.  The selected two-pass configuration reaches
 $95.14\pm0.04$\% accuracy across three seeds, with effective rank
 $112.8$ (seed range 106.6--120.9) and median feature variance 0.378.  It exceeds
-the matched random-feature validation mean by 0.29 points while retaining no
+the matched no-normalization random validation mean by 0.29 points while retaining no
 temporal graph.
 
 At every step, the previous activation, running moments, normalization state,
@@ -749,6 +832,11 @@ are slow in the present GPU implementation.  Canonical \TeReL{} also takes
 more wall-clock time than BP despite a lower declared operation proxy, so no
 hardware or energy advantage follows from these software measurements.
 
+Canonical BatchNorm is a same-layer, cross-example communication channel and
+its affine parameters are learned.  Depth-local credit assignment therefore
+does not imply a per-example local update for the headline model; the simpler
+outer-product factorization applies to the identity-normalizer variants.
+
 The five-seed v2 matrix was frozen after validation-only recovery, but the
 official MNIST test set was historically seen by the rejected submission and
 the separate diagnostic revision.  This is a sequential confirmation, not a
@@ -770,8 +858,9 @@ state and chunk timescales.  A useful next study should vary those timescales
 rather than reduce natural order to one chronological-versus-shuffled number.
 
 \paragraph{Constrained hardware.}
-The rule's ingredients---presynaptic activity, an output-side teaching factor,
-leaky state, and no error path across depth---are structurally compatible with
+For the identity-normalizer and streaming forms, the rule's
+ingredients---presynaptic activity, an output-side teaching factor, leaky
+state, and no error path across depth---are structurally compatible with
 layer-local or event-driven execution.  \TeReL{}-S further removes the temporal
 graph, and our samplewise experiment shows that this stricter form can retain
 useful accuracy.  These are architectural reasons to investigate specialized
@@ -801,7 +890,8 @@ state, although its dense lateral operator is quadratic in width.
 
 After restoring the intended optimizer, schedule, normalization, and lateral
 timescale, canonical \TeReL{} reaches 97.30\% on MNIST, within 1.04 points of
-data-presentation-matched BP and 2.17 points above matched random features.  The final
+data-presentation-matched BP and 1.95 points above the BatchNorm-calibrated
+random encoder.  The final
 layer alone retains 97.14\%, while temporally local \TeReL{}-S reaches 96.29\%
 and its tuned samplewise form learns a high-rank 95.14\% validation
 representation.  Matched Local SupCon reaches 96.98\%, 0.32 points below
@@ -835,8 +925,10 @@ Because $g$, $m$, $A$, and $q_t$ are detached,
 \frac{\partial L_C}{\partial z_t}
 &=\frac{1}{BD}Aq_t.
 \end{align}
-Combining terms gives \cref{eq:local-gradient}, and applying the chain rule to
-$z_t=\phi(Wx_t+c)$ gives \cref{eq:weight-gradient}.  For undetached adjacent
+Combining terms gives \cref{eq:local-gradient}.  Applying the chain rule first
+through $\phi$ and then through the minibatch map $N_{\eta,\mathcal B}$ gives
+the Jacobian-block form in \cref{eq:weight-gradient}; setting $N$ to the
+identity recovers the displayed presynaptic outer-product special case.  For undetached adjacent
 pairs, $z_t$ appears as the current member of pair $t$ and the previous member
 of pair $t+1$; summing those derivatives gives \cref{eq:batch-gradient}.
 Finite-fixture regression tests check both signs and the presence of the future
@@ -863,6 +955,8 @@ The public suite checks:
   with no gradient from a later layer to an earlier layer;
   \item fixed dynamic-state size, bounded streaming normalization, samplewise
   gradient release, and absence of retained autograd graphs;
+  \item train-only BatchNorm calibration that changes running buffers while
+  leaving every random-encoder weight, bias, and affine parameter unchanged;
   \item exact MNIST split roles, PAMAP2 subject roles, train-only
   normalization, temporal boundaries, and feature/boundary-only encoder batches;
   \item matched all-layer and last-layer probes, greedy layerwise scheduling,
@@ -895,6 +989,7 @@ mconfig    c061c4f761e2037265a2c2b45033d05bc11c62c3470b6a3390756a6067c80d28
 mprotocol  505db43ba8cb06d5175beb163f0828c58b58afcb9b66a95217e15b8abf1cd41e
 mrecords   53c67637a43b4f92227db1a19a144a049b934f34ca1ac5506223b4971fcee6bc
 manalysis  9f7378302e47219ef14e0d7a30d20a8f37417a5595ae8a94e502944b1bf43d61
+mregen     95102e0d4858188f56daf638b979bb805341837639519bc93178cfc68fb91d7d
 rcode      e738ec33792cff2f40add7de862622bd0f60661e
 rreport    64cd2d82b9f1fe869dc1847a0ce4f8e5cd738f37
 rconfig    d17267673e4eb9263cee080acfb549820835701d01e3eed5eab0e22e302afba2
@@ -903,10 +998,22 @@ rvalidate  79208773d0a12606b9211050f9a3649df3898263c2844adc29ce19ddf31d0b8b
 rmanifest  dc021f1038d67add3bb7142ce25deb27a2fb94c6c43dcf5509b565a850c837fa
 rrecords   6f60879f23f927297892883195d8e2204adb6406b1ab736a71404799888e6654
 ranalysis  6cc83cd265c3389ec82f9491b70148490d9ad8d5f6d1fafd3bdc89c3c424b0cb
+ncode      7e1631fc7cedd02cc870e4f1aa4007182970ae9d
+nreport    888c073bd499df3130f96e8365cb1f0510fbea8d
+nconfig    01a03e1bb173ac5d8d03e8a1b2bf4a25abf3aab81620b58693f781558860de2f
+nprotocol  d2c209bda037329bfbc61f40bdd9ae5405cad34ba420fedf34e0ee2e81d495dd
+nvalidate  8714d2624d30ef8d5c185977813fbb922f35a54a2071ddebe77c0c8597bce62d
+nmanifest  48ca2bfd2e2306955696b808c48f49d2cfb225eeed6367bc0e20a186e7fe1ce8
+nrecords   edbdf926351a3c84c028cdb11a364dba957412fbf05c21695902ae9d1901f585
+nanalysis  fc98d9073064ae78e7e8bd93be34b5484620d7d4735c29ffdd9cfc8af20ac9eb
 \end{verbatim}
 Here the \texttt{rrecords} digest is the SHA-256 of the ordered five per-file
 SHA-256 values; \texttt{rcode} is the immutable execution commit and
-\texttt{rreport} contains reporting and packaging code only.
+\texttt{rreport} contains reporting and packaging code only.  The analogous
+\texttt{n*} identifiers cover the normalization audit.  The frozen mechanism
+JSON (\texttt{manalysis}) is retained as an execution artifact; regenerating
+the analysis with the supplied reporting source gives \texttt{mregen}, with
+identical reported numbers and additional Student-$t$ metadata.
 The core commands are:
 \begin{verbatim}
 uv sync --extra test
@@ -923,7 +1030,7 @@ uv run python -m terel.resubmission.analysis_v2 \
   --results-tex <results-v2.tex> --appendix-tex <appendix-v2.tex>
 uv run python -m terel.resubmission.mechanism_analysis_v2 \
   --reference-results <recovery-v2> --audit-results <mechanism-v2> \
-  --analysis-output <mechanism-analysis.json> \
+  --analysis-output <mechanism-analysis-regenerated.json> \
   --results-tex <generated-mechanism.tex>
 uv run python -m terel.resubmission.review_patch_analysis \
   --validation-results <review-validation-v3> \
@@ -932,6 +1039,11 @@ uv run python -m terel.resubmission.review_patch_analysis \
   --output <review-validation-analysis.json> \
   --confirmatory-output <review-test-analysis.json> \
   --results-tex <review-results.tex> --appendix-tex <review-appendix.tex>
+uv run python -m terel.resubmission.latest_review_analysis \
+  --control-results <review-confirmatory-v4> \
+  --reference-results <confirmatory-results-v2> \
+  --analysis-output <review-analysis-v4.json> \
+  --results-tex <review-results-v4.tex>
 \end{verbatim}
 Absolute data and artifact roots in the executed plan are retained for
 provenance; the README gives portable equivalents.  The anonymous supplement

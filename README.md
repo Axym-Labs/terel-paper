@@ -7,7 +7,10 @@ This revision restores the intended TeReL training protocol and separates two
 method roles: canonical greedy, layer-local TeReL and temporally local,
 bounded-state TeReL-S. In the frozen five-seed confirmation, canonical TeReL
 reaches 97.30% MNIST test accuracy versus 98.34% for data-presentation-matched
-backpropagation and 95.13% for matched random features. A tuned samplewise
+backpropagation and 95.35% for a BatchNorm-calibrated random encoder. The
+paired TeReL advantage over this normalization-matched control is 1.95 points
+with a 95% Student-t interval [1.64, 2.25]. The original 95.13%
+no-normalization random result remains reported separately. A tuned samplewise
 TeReL-S run reaches 95.14% validation accuracy with fixed state and no retained
 temporal graph. PAMAP2 remains a secondary natural-order stress test.
 A frozen one-factor validation audit additionally shows that temporal
@@ -26,7 +29,8 @@ metadata variation.
 When present, `generated_results_v2.tex`,
 `generated_mechanism_results_v2.tex`, and
 `generated_appendix_results_v2.tex` are included automatically, together with
-the two `generated_review_patch_*_v3.tex` files. The anonymous supplement
+the two `generated_review_patch_*_v3.tex` files and
+`generated_latest_review_v4.tex`. The anonymous supplement
 contains their generation commands, frozen records, and provenance.
 
 Regenerate the corrected performance figure from the frozen analysis JSON with:
@@ -34,12 +38,14 @@ Regenerate the corrected performance figure from the frozen analysis JSON with:
 ```bash
 python figures/corrected-performance-v2.py \
   /path/to/confirmatory-analysis-v2.json \
-  /path/to/review-patch-confirmatory-analysis-v3.json
+  /path/to/review-patch-confirmatory-analysis-v3.json \
+  /path/to/latest-review-analysis-v4.json
 python figures/terel-revision-overview.py
 ```
 
 The committed PDF and generated tables correspond to the frozen 25-run v2
 confirmatory matrix, the separately frozen 12-run validation mechanism audit,
-and the bounded review patch described in the paper. Raw seeds, paired
+the bounded comparator patch, and the five-run normalization-control patch
+described in the paper. Raw seeds, paired
 intervals, configuration hashes, and resource accounting are included in the
 paper, appendix, and anonymized supplement.
