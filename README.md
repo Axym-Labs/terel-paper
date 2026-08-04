@@ -3,19 +3,14 @@
 Anonymous-review source for *Temporal Regularized Learning: Deep Local
 Soft-SFA with Constructed Temporal Supervision*.
 
-This revision restores the intended TeReL training protocol and separates two
-method roles: canonical greedy, layer-local TeReL and temporally local,
-bounded-state TeReL-S. In the frozen five-seed confirmation, canonical TeReL
-reaches 97.30% MNIST test accuracy versus 98.34% for data-presentation-matched
-backpropagation and 95.35% for a BatchNorm-calibrated random encoder. The
-paired TeReL advantage over this normalization-matched control is 1.95 points
-with a 95% Student-t interval [1.64, 2.25]. The original 95.13%
-no-normalization random result remains reported separately. A tuned samplewise
-TeReL-S run reaches 95.14% validation accuracy with fixed state and no retained
-temporal graph. PAMAP2 remains a secondary natural-order stress test.
-A frozen one-factor validation audit additionally shows that temporal
-coherence supplies the aligned signal, variance expansion prevents scale
-collapse, and decorrelation prevents redundancy collapse.
+The paper presents two method roles: canonical greedy, layer-local TeReL and
+temporally local, bounded-state TeReL-S. On label-ordered MNIST, canonical
+TeReL reaches 97.30% test accuracy across five seeds, versus 98.34% for
+data-presentation-matched backpropagation, 96.98% for matched Local SupCon, and
+95.35% for a BatchNorm-calibrated random encoder. Mechanism controls isolate
+the temporal, variance, and decorrelation contributions; the direct-covariance
+audit quantifies the lagged lateral signal. PAMAP2 remains a secondary
+natural-order stress test.
 
 Build the PDF with:
 
@@ -23,29 +18,25 @@ Build the PDF with:
 SOURCE_DATE_EPOCH=1785715200 tectonic main.tex
 ```
 
-The fixed epoch makes the committed PDF byte-reproducible by removing build-time
-metadata variation.
+The fixed epoch removes build-time metadata variation. Generated scientific
+inputs have descriptive names:
 
-When present, `generated_results_v2.tex`,
-`generated_mechanism_results_v2.tex`, and
-`generated_appendix_results_v2.tex` are included automatically, together with
-the two `generated_review_patch_*_v3.tex` files and
-`generated_latest_review_v4.tex`. The anonymous supplement
-contains their generation commands, frozen records, and provenance.
+- `generated_primary_results.tex` and `generated_primary_appendix.tex`
+- `generated_mechanism_results.tex`
+- `generated_local_supcon_results.tex` and
+  `generated_local_supcon_appendix.tex`
+- `generated_normalization_control.tex`
 
-Regenerate the corrected performance figure from the frozen analysis JSON with:
+Regenerate the figures with:
 
 ```bash
-python figures/corrected-performance-v2.py \
-  /path/to/confirmatory-analysis-v2.json \
-  /path/to/review-patch-confirmatory-analysis-v3.json \
-  /path/to/latest-review-analysis-v4.json
-python figures/terel-revision-overview.py
+python figures/mnist-performance-comparison.py \
+  /path/to/primary-analysis.json \
+  /path/to/local-supcon-analysis.json \
+  /path/to/normalization-control-analysis.json
+python figures/terel-method-overview.py
 ```
 
-The committed PDF and generated tables correspond to the frozen 25-run v2
-confirmatory matrix, the separately frozen 12-run validation mechanism audit,
-the bounded comparator patch, and the five-run normalization-control patch
-described in the paper. Raw seeds, paired
-intervals, configuration hashes, and resource accounting are included in the
-paper, appendix, and anonymized supplement.
+The anonymous supplement contains the pinned environment, exact source
+records, selection ledger, portable generation commands, and
+`ARTIFACT_README.md` with detailed provenance.

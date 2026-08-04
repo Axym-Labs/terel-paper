@@ -131,7 +131,7 @@ ax.text(0.0, 0.98, "B  Two locality regimes, retained accuracy", fontsize=13, we
 ax.text(
     0.0,
     0.91,
-    "Matched readouts separate the competitive result from the streaming audit.",
+    "Matched readouts compare methods; the samplewise variant isolates streaming.",
     fontsize=9.2,
     color=MUTED,
     va="top",
@@ -140,7 +140,7 @@ ax.text(
 box(ax, (0.01, 0.58), 0.18, 0.17, "class chunks\n60 data\npasses", face=ORANGE_LIGHT, edge=ORANGE, size=8.8, weight="bold")
 box(ax, (0.28, 0.58), 0.21, 0.17, "canonical TeReL\ngreedy layers\nlive chunk time", face=PURPLE_LIGHT, edge=PRIMARY, size=8.8, weight="bold")
 box(ax, (0.58, 0.58), 0.18, 0.17, "matched all-layer\nlinear probe", face="white", edge=ORANGE, size=8.8)
-box(ax, (0.83, 0.60), 0.15, 0.13, "97.30%\n5 test seeds", face=GREY, edge=RED, size=8.8, weight="bold")
+box(ax, (0.83, 0.60), 0.15, 0.13, "97.30%\n5 seeds", face=GREY, edge=RED, size=8.8, weight="bold")
 arrow(ax, (0.19, 0.665), (0.28, 0.665), color=ORANGE)
 arrow(ax, (0.49, 0.665), (0.58, 0.665), color=PRIMARY)
 arrow(ax, (0.76, 0.665), (0.83, 0.665), color=RED)
@@ -155,26 +155,16 @@ arrow(ax, (0.49, 0.325), (0.58, 0.325), color=PRIMARY)
 arrow(ax, (0.76, 0.325), (0.83, 0.325), color=RED)
 ax.text(0.095, 0.19, "samplewise audit", ha="center", color=GREEN, fontsize=8.7, weight="bold")
 
-ax.plot([0.80, 0.80], [0.16, 0.80], color=RED, linewidth=1.2, linestyle=(0, (3, 3)))
-ax.text(0.80, 0.84, "frozen v2 test gate", color=RED, fontsize=8.7, weight="bold", ha="center")
-ax.text(
-    0.01,
-    0.04,
-    "Selection: validation only (101/202/303)  •  Confirmation: frozen test matrix (1101–1505)",
-    fontsize=8.6,
-    color=MUTED,
-)
-
-plt.subplots_adjust(left=0.025, right=0.985, top=0.965, bottom=0.055, wspace=0.10)
+plt.subplots_adjust(left=0.025, right=0.985, top=0.965, bottom=0.075, wspace=0.10)
 
 source_directory = Path(__file__).resolve().parent
 fig.savefig(
-    source_directory / "terel-revision-overview.pdf",
+    source_directory / "terel-method-overview.pdf",
     bbox_inches="tight",
     metadata={"CreationDate": None, "ModDate": None},
 )
 fig.savefig(
-    source_directory / "terel-revision-overview.png",
+    source_directory / "terel-method-overview.png",
     dpi=220,
     bbox_inches="tight",
 )

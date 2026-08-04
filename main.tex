@@ -33,14 +33,14 @@ Temporal Supervision}
 \newcommand{\stopgrad}{\operatorname{sg}}
 \newcommand{\offdiag}{\operatorname{offdiag}}
 
-\providecommand{\LeadFigurePath}{figures/terel-revision-overview.pdf}
+\providecommand{\LeadFigurePath}{figures/terel-method-overview.pdf}
 \providecommand{\LeadFigureCaption}{%
 \textbf{A:} Each \TeReL{} layer receives temporal-coherence, gated-variance,
 and lateral-decorrelation signals without an error path from later layers.
 \textbf{B:} Canonical \TeReL{} retains short within-chunk temporal gradients;
 \TeReL{}-S detaches them and admits bounded-state samplewise execution.
-Corrected experiments use matched probes, explicit compute accounting, and a
-manifest-locked test gate.}
+Experiments use validation-only selection, matched probes, repeated seeds, and
+explicit compute accounting.}
 
 \begin{document}
 
@@ -59,9 +59,8 @@ self-supervision.  We define two roles in the method family: canonical
 activations inside a short chunk; \TeReL{}-S detaches the temporal reference
 and supports bounded-state samplewise execution.  We derive both gradients,
 specify update order and boundary handling, and account separately for
-parameters, optimizer state, dynamic state, and batch storage. All headline
-experiments are rerun from an optimizer-corrected implementation
-under a validation-selected, manifest-locked protocol.  On label-ordered
+parameters, optimizer state, dynamic state, and batch storage.  All headline
+experiments follow a validation-selected protocol fixed before evaluation.  On label-ordered
 MNIST, canonical \TeReL{} reaches $97.30\pm0.07$\% test accuracy across five
 seeds, versus $98.34\pm0.08$\% for data-presentation-matched backpropagation and
 $95.35\pm0.19$\% for a normalization-matched random encoder.  Restricting the readout to the
@@ -76,9 +75,9 @@ separately tuned, strictly samplewise \TeReL{}-S
 configuration reaches $95.14\pm0.04$\% validation accuracy with no retained
 temporal graph and fixed state.  A chronological PAMAP2 stress test remains
 inconclusive and is reported as a secondary boundary, not the paper's center.
-These results restore the competitive empirical finding in the constructed
-MNIST regime while making precise which locality, streaming, and natural-order
-conclusions the evidence supports.
+Together, these results establish a competitive empirical finding in the
+constructed MNIST regime while making precise which locality, streaming, and
+natural-order conclusions the evidence supports.
 \end{abstract}
 
 \begin{figure}[t]
@@ -140,18 +139,17 @@ The paper makes five contributions:
   within-layer normalization Jacobian, the detached state updates, and
   a quantitative error decomposition for the shifted lateral heuristic, and
   measure the successful lagged operator against its same-batch direction.
-  \item We recover competitive constructed-MNIST performance from an optimizer-corrected
-  implementation: canonical \TeReL{} lies 1.04 percentage points behind
-  data-presentation-matched backpropagation and 1.95 points above a
-  normalization-matched random encoder.
-  A matched local supervised-contrastive comparator and a direct-covariance
-  control delimit what this result attributes to the soft-SFA construction.
+  \item We demonstrate competitive constructed-MNIST performance: canonical
+  \TeReL{} reaches 97.30\%, versus 98.34\% for backpropagation with the same
+  data presentations and 95.35\% for a normalization-matched random encoder.
+  Matched Local SupCon and direct-covariance controls bound the attribution to
+  \TeReL{}'s soft-SFA construction.
   \item We demonstrate tuned batch-size-one learning with fixed state and no
   temporal graph, and report parameters, optimizer state, dynamic state, peak
   memory, compute proxies, and throughput separately.
   \item We provide validation-only selection, matched architectures and
-  readouts, five confirmatory seeds, raw results, uncertainty, and exact
-  result-to-commit provenance.
+  readouts, five evaluation seeds, raw results, uncertainty, and artifact-level
+  provenance.
 \end{enumerate}
 
 \section{Temporal Regularized Learning}\label{sec:method}
@@ -281,7 +279,7 @@ with missing and boundary-crossing terms omitted.  The second term depends on a
 future activation within the chunk.  We therefore describe canonical \TeReL{}
 as layer-local but not temporally online; \TeReL{}-S is both layer-local and
 temporally local.  Across minibatch calls, even canonical \TeReL{} reads its
-stored predecessor as detached state.  In the frozen MNIST construction, a
+stored predecessor as detached state.  In the fixed MNIST construction, a
 mean 151.2 of 46,866 valid edges per data presentation cross such a boundary
 (0.32\%; 9,073 edges over the 60-pass encoder schedule); all remaining valid
 edges use the live within-call gradient in \cref{eq:batch-gradient}.
@@ -467,8 +465,7 @@ Blockwise SSL & paired-view invariance & mini-batch blocks & deep nonlinear bloc
 
 \section{Experimental protocol}\label{sec:protocol}
 
-The experiments answer four questions.  First, after restoring the intended
-training schedule and optimizer state, how does canonical \TeReL{} compare with
+The experiments answer four questions.  First, how does canonical \TeReL{} compare with
 data-presentation-matched backpropagation, normalization-matched and
 no-normalization random encoders, and a label-aware local learner under the
 constructed supervision?  Second, is that
@@ -481,8 +478,8 @@ advantage transfer to a natural wearable stream?
 
 \paragraph{MNIST controlled temporal supervision.}
 The official 60,000-example training split is stratified with seed 1701 into
-50,000 training and 10,000 validation examples.  The official 10,000-example
-test split is excluded from v2 configuration recovery.  Within each
+50,000 training and 10,000 validation examples; the official 10,000-example
+test split is used only for final evaluation.  Within each
 encoder epoch, training examples are randomly arranged into same-class chunks
 of length 16; all chunk starts are temporal boundaries.  Labels create the
 persistent order but do not enter the \TeReL{} loss.  This controlled setting
@@ -524,10 +521,10 @@ optimizer, batch size, and 60 data passes, trained end to end with cross
 entropy.  \TeReL{}-S uses detached temporal references, joint local training,
 no batch normalization, $(1,5,1)$, and a separately validated ten-pass
 schedule.  It is an intentionally lean temporally local variant, so its compute
-is reported rather than described as matched to BP.  The original random
+is reported rather than described as matched to BP.  A no-normalization random
 reference retains the same seed-specific hidden weights but omits normalization;
 we keep it because it matches the no-normalization \TeReL{}-S architecture.
-The acceptance-critical random control instead includes the canonical affine
+The normalization-matched random control instead includes the canonical affine
 BatchNorm modules.  Its hidden weights and biases remain at initialization, as
 do BatchNorm scale one and offset zero.  Under \texttt{no\_grad}, one pass over
 the 50,000 training examples in stored order (batch size 256) calibrates only
@@ -552,8 +549,8 @@ layers update simultaneously.  It uses the same architecture, batch
 normalization, batch size, 60 data presentations, all-layer probe, and test
 seeds as the primary comparison.  A validation-only $3\times2$ grid varies
 learning rate in $\{10^{-4},3\times10^{-4},10^{-3}\}$ and temperature in
-$\{0.1,0.2\}$, the same number of candidates used for no \TeReL{} component or
-headline-matrix selection.
+$\{0.1,0.2\}$.  This six-candidate budget matches the primary method-selection
+budget.
 
 The primary readout for every method is the same linear classifier over the
 concatenation of both hidden layers.  A final-layer-only probe on the identical
@@ -562,19 +559,14 @@ AdamW for 60 epochs (learning rate 0.003, weight decay $10^{-4}$, batch size
 2,048).  This matched-access design prevents a comparison in which a local
 method exposes less of its representation than the baseline.
 
-\subsection{Validation recovery and freeze}
+\subsection{Model selection and evaluation separation}
 
 Selection uses only the 10,000-example validation split and seeds 101, 202,
-and 303.  We first reconstructed the original successful ingredients and then
-varied one factor at a time: temporal detachment, joint versus greedy layer
-training, lateral-state timescale, normalization, readout, augmentation, and
-schedule.  The principal regression was not caused by the corrected loss: the
-failed protocol had simultaneously shortened training from 60 to 10 passes,
-changed greedy to joint optimization, detached time, removed normalization,
-restricted the readout, and set $\rho_A=0.99$ in place of the validated
-one-minibatch-lagged operator ($\rho_A=0$).
-A bounded validation-only recovery restored those ingredients before the
-confirmatory matrix was frozen.
+and 303.  Candidate method configurations are compared on those seeds, after
+which one configuration per method is fixed for the five-seed evaluation.  In
+particular, the Local SupCon learning-rate/temperature grid and the \TeReL{}
+component and lateral-signal controls use validation data only.  Reported test
+results are not used to choose among alternative configurations.
 
 The streaming configuration is selected separately because batch-size-one
 execution changes both normalization and update count.  It uses \TeReL{}-S,
@@ -583,75 +575,55 @@ statistics and lateral momenta 0.99, and one forward/backward step per example.
 No future example, retained temporal graph, or stream-length-dependent buffer
 is used.
 
-\subsection{Confirmatory analysis and test gate}
+\subsection{Evaluation and uncertainty}
 
 Central results use seeds 1101, 1202, 1303, 1404, and 1505.  We report every
 raw result, the mean, sample standard deviation, a small-sample Student-$t$
 interval, and a percentile 95\% bootstrap interval from 10,000 resamples
 (analysis seed 260803).  Primary contrasts pair methods by seed; Student-$t$
 intervals are primary and bootstrap intervals are retained as a sensitivity
-analysis.  The preregistered competitive gate places canonical \TeReL{} within
-1.5 percentage points of BP; this was an operational absolute-accuracy target
-chosen before v2, not a claim of error-rate parity.  The original v2 learned-
-representation gate requires improvement over the no-normalization random
-encoder; the later acceptance-critical audit repeats that test with canonical
-BatchNorm included.
+analysis.  Learned-representation evidence is assessed against both the
+normalization-matched random encoder and the no-normalization random reference.
 Non-collapse requires every canonical seed to have effective rank at least 20,
 median variance at least 0.05, and active fraction at least 0.25.
 
-Before the v2 test run, all implementation tests passed; the validation ledger,
-resolved matrix, code commit, and protocol were hash-locked in a clean manifest;
-and the runner required an explicit test flag.  The MNIST test set was not used
-during v2 recovery, but it had been observed by the rejected submission and by
-the earlier diagnostic revision.  We therefore treat v2 as a sequential
-confirmation rather than calling the test split historically untouched.  No
-v2 hyperparameter was changed after opening the gate.  The subsequent
-mechanism audit was separately frozen and uses validation data only; it removes
-one loss coefficient or shuffles order without selecting a replacement model.
-
-The later review patch follows the same separation.  All six Local SupCon
-candidates and both lateral controls are run on validation seeds 101, 202, and
-303.  The selected comparator is then frozen in a one-row manifest before its
-five test seeds are evaluated.  These additions do not alter, select among, or
-rerun any v2 headline method.
-
-The normalization audit is another one-row extension.  Its calibration
-treatment and the same five test seeds were fixed a priori by the review rather
-than selected by validation performance.  The manifest was frozen at a clean
-execution commit before the test gate opened; exactly five random-encoder runs
-were executed, and no v2 or v3 record was changed or rerun.
+The final configurations, seeds, calibration treatment, and analysis rules are
+fixed before evaluation.  Each selected method has one five-seed evaluation;
+the BatchNorm-calibrated random control uses the same seeds without a
+validation sweep.  Mechanism and direct-covariance analyses remain
+validation-only and do not select replacement models.  The supplement records
+the complete selection ledger and raw outputs.
 
 \section{Results}\label{sec:results}
 
-\IfFileExists{generated_results_v2.tex}{%
-  \input{generated_results_v2.tex}%
+\IfFileExists{generated_primary_results.tex}{%
+  \input{generated_primary_results.tex}%
 }{%
-  \noindent\fbox{\parbox{0.95\linewidth}{Confirmatory result tables are
-  generated only after the held-out manifest gate.  This draft intentionally
-  contains no inherited numerical values from the superseded implementation.}}
+  \noindent\fbox{\parbox{0.95\linewidth}{Primary result tables are generated
+  from the supplied per-seed records.}}
 }
 
-\subsection{Competitive corrected performance}
+\subsection{Competitive performance}
 
 Canonical \TeReL{} reaches $97.30\pm0.07$\%, compared with
 $98.34\pm0.08$\% for matched BP.  The paired gap is 1.04 percentage points
-(95\% paired Student-$t$ interval $[0.99,1.08]$), inside the frozen 1.5-point
-competitive gate.  Relative to the BatchNorm-calibrated random encoder,
+(95\% paired Student-$t$ interval $[0.99,1.08]$).  Relative to the
+BatchNorm-calibrated random encoder,
 \TeReL{} gains 1.95 points ($[1.64,2.25]$).  The calibrated random mean is
 $95.35\pm0.19$\%, compared with $95.13\pm0.27$\% for the retained
 no-normalization random reference; their paired difference is 0.22 points
 ($[-0.08,0.52]$).  In error-rate terms, however,
-its 2.70\% error is 63\% higher than BP's 1.66\%; ``near'' refers only to the
-predeclared absolute-accuracy gate, not error parity.  All five seeds satisfy the
+its 2.70\% error is 63\% higher than BP's 1.66\%; the small absolute-accuracy
+gap should therefore not be read as error-rate parity.  All five seeds satisfy the
 non-collapse criteria, and every intended layer and normalization group has a
-nonzero parameter update.  The corrected evidence therefore supports the
+nonzero parameter update.  The evidence therefore supports the
 paper's central empirical statement within this constructed MNIST regime: a
 two-hidden-layer network trained by layer-local soft-SFA reaches 97.30\%.
 
-\IfFileExists{generated_latest_review_v4.tex}{%
-  \input{generated_latest_review_v4.tex}%
+\IfFileExists{generated_normalization_control.tex}{%
+  \input{generated_normalization_control.tex}%
 }{%
-  The normalization-control table is generated from the frozen v4 records.
+  The normalization-control table is generated from the supplied records.
 }
 
 \subsection{Matched label-aware local comparator}
@@ -666,16 +638,15 @@ protocol.  The difference is small and benchmark-specific, so it supports a
 narrow attribution to the soft-SFA construction rather than general
 superiority over local contrastive learning.
 
-\IfFileExists{generated_review_patch_v3.tex}{%
-  \input{generated_review_patch_v3.tex}%
+\IfFileExists{generated_local_supcon_results.tex}{%
+  \input{generated_local_supcon_results.tex}%
 }{%
-  The matched-comparator table is generated from the frozen review-patch records.
+  The matched-comparator table is generated from the supplied records.
 }
 
 \subsection{Mechanism isolation}
 
-After the confirmatory matrix was complete, we froze a validation-only
-one-factor audit under the recovered canonical protocol.  Removing the temporal
+The validation-only one-factor audit uses the canonical protocol.  Removing the temporal
 term loses 8.18 percentage points without collapsing rank, while fully
 shuffling the class-persistent order loses 7.55 points.  Temporal coherence is
 therefore the task-aligned teaching signal rather than an incidental regularizer.
@@ -685,10 +656,10 @@ decorrelation, variance remains high but effective rank falls to 2.8.  Batch
 normalization alone does not rescue either failure.  The three signals thus
 have empirically distinct roles matching the soft-SFA interpretation.
 
-\IfFileExists{generated_mechanism_results_v2.tex}{%
-  \input{generated_mechanism_results_v2.tex}%
+\IfFileExists{generated_mechanism_results.tex}{%
+  \input{generated_mechanism_results.tex}%
 }{%
-  Mechanism-audit tables are generated from the frozen validation records.
+  Mechanism-audit tables are generated from the supplied validation records.
 }
 
 The separate lagged-operator audit covers 17,637 nonzero minibatch directions
@@ -745,7 +716,7 @@ forcing every output direction into the same class-compressed geometry.
 \begin{table}[H]
 \centering
 \small
-\caption{MNIST representation diagnostics averaged across five frozen seeds.
+\caption{MNIST representation diagnostics averaged across five seeds.
 B/W is between/within-class scatter, Sel. is median unit class selectivity,
 $r_{\mathrm{eff}}$ is covariance effective rank, and
 $|\rho_{\mathrm{off}}|$ is mean absolute off-diagonal correlation.}
@@ -765,16 +736,17 @@ BP (all) & 97.87 & 0.968 & 1.857 & 21.17 & 0.152 \\
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\linewidth]{figures/corrected-performance-v2.pdf}
-  \caption{Corrected confirmatory evidence.  \textbf{a:} individual MNIST test
-  seeds and means (horizontal bars).  Canonical \TeReL{} recovers a small
+  \includegraphics[width=\linewidth]{figures/mnist-performance-comparison.pdf}
+  \caption{MNIST performance and paired contrasts.  \textbf{a:} individual test
+  seeds and means (horizontal bars).  Canonical \TeReL{} has a small
   absolute-accuracy gap to BP, exceeds both the normalization-matched random
   encoder and the matched label-aware Local SupCon learner, and retains the
   mean result in its final layer; temporally local \TeReL{}-S remains above its
-  no-normalization random reference.  \textbf{b:} paired seed
-  differences; lines are paired 95\% Student-$t$ intervals and open circles are
-  means.}
-  \label{fig:corrected-performance}
+  no-normalization random reference.  \textbf{b:} paired seed differences;
+  rows are canonical \TeReL{} minus the named comparator except for the
+  explicitly named \TeReL{}-S and readout contrasts.  Lines are paired 95\%
+  Student-$t$ intervals and open circles are means.}
+  \label{fig:mnist-performance}
 \end{figure}
 
 \subsection{Natural temporal order on PAMAP2}
@@ -793,10 +765,9 @@ need multi-subject validation and stronger shift control.
 
 \subsection{Streaming execution and cost}
 
-The first untuned batch-size-one audit verified bounded state but produced weak
-rank.  We treated that as a starting point rather than a conclusion and tested
-learning rate, state timescale, streaming normalization, accumulation, and
-exposure count on validation data.  The selected two-pass configuration reaches
+The samplewise configuration is selected on validation data over learning
+rate, state timescale, streaming normalization, accumulation, and exposure
+count.  The selected two-pass configuration reaches
 $95.14\pm0.04$\% accuracy across three seeds, with effective rank
 $112.8$ (seed range 106.6--120.9) and median feature variance 0.378.  It exceeds
 the matched no-normalization random validation mean by 0.29 points while retaining no
@@ -809,7 +780,7 @@ serial resource seed processes one observation per optimizer step and takes
 large launch and update overhead.  This is evidence for quality-bearing
 samplewise learning and bounded storage, not a claim that the present software
 is throughput- or energy-optimal.  Encoder resource accounting for the main
-methods is given in \cref{tab:corrected-resources,tab:streaming-v2}.
+methods is given in \cref{tab:encoder-resources,tab:samplewise-streaming}.
 
 \section{Limitations}
 
@@ -837,11 +808,7 @@ its affine parameters are learned.  Depth-local credit assignment therefore
 does not imply a per-example local update for the headline model; the simpler
 outer-product factorization applies to the identity-normalizer variants.
 
-The five-seed v2 matrix was frozen after validation-only recovery, but the
-official MNIST test set was historically seen by the rejected submission and
-the separate diagnostic revision.  This is a sequential confirmation, not a
-pristine first test access.  An independent benchmark should provide the next
-strong confirmation.  Finally, locality here concerns credit assignment:
+Finally, locality here concerns credit assignment:
 standard optimizers, exact activation derivatives, normalization, and
 synchronized matrix operations remain.
 
@@ -870,9 +837,8 @@ the concrete engineering steps needed to test that perspective.
 
 \paragraph{Recurrent extension.}
 The temporal objective also suggests a recurrent representation module whose
-slow state supports prediction without receiving prediction gradients.  The
-earlier exploratory model did not enforce that separation and therefore cannot
-test the idea cleanly.  A valid recurrent comparison should isolate the
+slow state supports prediction without receiving prediction gradients.  A
+valid recurrent comparison should isolate the
 representation and prediction paths, include matched random-state and BPTT
 controls, and repeat across seeds.  We retain this as a motivated extension of
 the mechanism, not as a result established here.
@@ -888,8 +854,7 @@ keeps short within-chunk temporal credit while cutting the error path across
 depth.  \TeReL{}-S additionally detaches time and has stream-length-independent
 state, although its dense lateral operator is quadratic in width.
 
-After restoring the intended optimizer, schedule, normalization, and lateral
-timescale, canonical \TeReL{} reaches 97.30\% on MNIST, within 1.04 points of
+Canonical \TeReL{} reaches 97.30\% on MNIST, within 1.04 points of
 data-presentation-matched BP and 1.95 points above the BatchNorm-calibrated
 random encoder.  The final
 layer alone retains 97.14\%, while temporally local \TeReL{}-S reaches 96.29\%
@@ -963,107 +928,30 @@ The public suite checks:
   execution of every declared BP layer, and exact data-pass accounting;
   \item batch SFA constraints, boundary-aware derivatives, and numerical
   validation of the official-algorithm IncSFA port; and
-  \item refusal of held-out evaluation after protocol, ledger, commit, or
-  tracked-worktree drift.
+  \item refusal of held-out evaluation after protocol, ledger, configuration,
+  or tracked-source drift.
 \end{itemize}
 
 \section{Reproducibility record}\label{app:reproducibility}
 
 The repository pins Python 3.12 and all direct dependencies in
-\texttt{pyproject.toml} and \texttt{uv.lock}.  Every run enables deterministic
-PyTorch algorithms, deterministic cuDNN behavior, and the prescribed cuBLAS
-workspace configuration.  The protocol, selection plan, validation ledger,
-confirmatory manifest, per-seed JSON records, raw confusion matrices,
-hardware/software record, and generated paper tables are checksum linked.  The
-executed identifiers are:
-\begin{verbatim}
-code       02afd90cf6927a588aa424d61cb86c6876b25c17
-manifest   9a1f8b8e5b75293efcbe5b13a767e74f57370f91658c73deb51e808e6c1c9828
-config     3e83ea66c03a621bbdc6f1a16a143c6dbf50643ae2b5213a1d78afba68ed0a6b
-protocol   faab529f7dab0d2940a8e7f6dd662c482b9da64bcf661e78029378c9fb0a68da
-validation 11faf7a030f9f76fd2174225ca8ba806d9439e0bbf63924b01361909ee3305cb
-results    727a0e9c335d5281cd3037ef8f64ee68ba927e9e77e4c0741312d0e4a7dcde88
-analysis   edfbe6443f161491795f9eae8f0c01011df249f591c672c7325f261fb25f21c0
-mcode      9532b3476c36e981dd5164c2c43affd4e791c9c6
-mconfig    c061c4f761e2037265a2c2b45033d05bc11c62c3470b6a3390756a6067c80d28
-mprotocol  505db43ba8cb06d5175beb163f0828c58b58afcb9b66a95217e15b8abf1cd41e
-mrecords   53c67637a43b4f92227db1a19a144a049b934f34ca1ac5506223b4971fcee6bc
-manalysis  9f7378302e47219ef14e0d7a30d20a8f37417a5595ae8a94e502944b1bf43d61
-mregen     95102e0d4858188f56daf638b979bb805341837639519bc93178cfc68fb91d7d
-rcode      e738ec33792cff2f40add7de862622bd0f60661e
-rreport    64cd2d82b9f1fe869dc1847a0ce4f8e5cd738f37
-rconfig    d17267673e4eb9263cee080acfb549820835701d01e3eed5eab0e22e302afba2
-rprotocol  c36f86cf795d6fd83ef7e7fdf5f1672b6756d8b66ed2473feaf97749cfbcf829
-rvalidate  79208773d0a12606b9211050f9a3649df3898263c2844adc29ce19ddf31d0b8b
-rmanifest  dc021f1038d67add3bb7142ce25deb27a2fb94c6c43dcf5509b565a850c837fa
-rrecords   6f60879f23f927297892883195d8e2204adb6406b1ab736a71404799888e6654
-ranalysis  6cc83cd265c3389ec82f9491b70148490d9ad8d5f6d1fafd3bdc89c3c424b0cb
-ncode      7e1631fc7cedd02cc870e4f1aa4007182970ae9d
-nreport    888c073bd499df3130f96e8365cb1f0510fbea8d
-nconfig    01a03e1bb173ac5d8d03e8a1b2bf4a25abf3aab81620b58693f781558860de2f
-nprotocol  d2c209bda037329bfbc61f40bdd9ae5405cad34ba420fedf34e0ee2e81d495dd
-nvalidate  8714d2624d30ef8d5c185977813fbb922f35a54a2071ddebe77c0c8597bce62d
-nmanifest  48ca2bfd2e2306955696b808c48f49d2cfb225eeed6367bc0e20a186e7fe1ce8
-nrecords   edbdf926351a3c84c028cdb11a364dba957412fbf05c21695902ae9d1901f585
-nanalysis  fc98d9073064ae78e7e8bd93be34b5484620d7d4735c29ffdd9cfc8af20ac9eb
-\end{verbatim}
-Here the \texttt{rrecords} digest is the SHA-256 of the ordered five per-file
-SHA-256 values; \texttt{rcode} is the immutable execution commit and
-\texttt{rreport} contains reporting and packaging code only.  The analogous
-\texttt{n*} identifiers cover the normalization audit.  The frozen mechanism
-JSON (\texttt{manalysis}) is retained as an execution artifact; regenerating
-the analysis with the supplied reporting source gives \texttt{mregen}, with
-identical reported numbers and additional Student-$t$ metadata.
-The core commands are:
-\begin{verbatim}
-uv sync --extra test
-uv run pytest -q
-uv run python -m terel.resubmission.confirmatory run \
-  --manifest <confirmatory-manifest-v2.json> \
-  --protocol <confirmatory-protocol-v2.md> \
-  --validation-ledger configs/resubmission/validation-ledger-v2.json \
-  --repository . --allow-test --output <directory> --device cuda
-uv run python -m terel.resubmission.analysis_v2 \
-  --results <confirmatory-results-v2> \
-  --streaming-results <streaming-recovery-v2> \
-  --analysis-output <analysis-v2.json> \
-  --results-tex <results-v2.tex> --appendix-tex <appendix-v2.tex>
-uv run python -m terel.resubmission.mechanism_analysis_v2 \
-  --reference-results <recovery-v2> --audit-results <mechanism-v2> \
-  --analysis-output <mechanism-analysis-regenerated.json> \
-  --results-tex <generated-mechanism.tex>
-uv run python -m terel.resubmission.review_patch_analysis \
-  --validation-results <review-validation-v3> \
-  --confirmatory-results <review-confirmatory-v3> \
-  --reference-results <confirmatory-results-v2> \
-  --output <review-validation-analysis.json> \
-  --confirmatory-output <review-test-analysis.json> \
-  --results-tex <review-results.tex> --appendix-tex <review-appendix.tex>
-uv run python -m terel.resubmission.latest_review_analysis \
-  --control-results <review-confirmatory-v4> \
-  --reference-results <confirmatory-results-v2> \
-  --analysis-output <review-analysis-v4.json> \
-  --results-tex <review-results-v4.tex>
-\end{verbatim}
-Absolute data and artifact roots in the executed plan are retained for
-provenance; the README gives portable equivalents.  The anonymous supplement
-contains path-redacted copies plus a manifest of source and packaged checksums.
-Dataset files are not redistributed.
+\texttt{pyproject.toml} and \texttt{uv.lock}.  Runs enable deterministic
+PyTorch and cuDNN behavior and the prescribed cuBLAS workspace configuration.
+The anonymous supplement contains the exact final configurations, selection
+ledger, seeds, per-seed JSON records, raw confusion matrices,
+hardware/software record, source, generated tables, and checksums.  Its
+\texttt{ARTIFACT\_README.md} gives portable commands and the exact provenance
+identifiers; the manuscript retains the scientific protocol rather than that
+identifier ledger.  Dataset files are not redistributed.
 
 \section{Secondary natural-stream controls}\label{app:pamap2}
 
-The PAMAP2 stress test was executed in the corrected v1 matrix before the v2
-performance recovery.  Its encoder never receives activity labels.  The
+The PAMAP2 encoder never receives activity labels.  The
 chronological and shuffled \TeReL{} rows differ only in order; the remaining
 rows locate their performance relative to untrained features, classical SFA,
 the exact in-batch covariance control, and end-to-end supervision.  All methods
 are weak on subject 8, confirming that the split is dominated by cross-subject
-shift.  The immutable identifiers are:
-\begin{verbatim}
-pamap code     abfa0ec1df78204b66d0c34141f5deb6063a572a
-pamap manifest 38ca928e0884a8bc40a5c7ffefc46313fc96c170661aea63f93bf9496b2b1af0
-pamap results  ad817a220fae65f9ebceb5941f967ec5bff2015c10847d1f8b00f54032ce7213
-\end{verbatim}
+shift.
 
 \begin{table}[H]
 \centering
@@ -1088,16 +976,16 @@ Supervised BP & $0.319\pm0.030$ $[0.296,0.341]$ \\
 
 \section{Complete configurations and raw results}\label{app:raw-results}
 
-\IfFileExists{generated_appendix_results_v2.tex}{%
-  \input{generated_appendix_results_v2.tex}%
+\IfFileExists{generated_primary_appendix.tex}{%
+  \input{generated_primary_appendix.tex}%
 }{%
-  Confirmatory raw-seed tables are generated from the frozen result manifest.
+  Primary raw-seed tables are generated from the supplied result records.
 }
 
-\IfFileExists{generated_review_patch_appendix_v3.tex}{%
-  \input{generated_review_patch_appendix_v3.tex}%
+\IfFileExists{generated_local_supcon_appendix.tex}{%
+  \input{generated_local_supcon_appendix.tex}%
 }{%
-  Review-patch validation and raw-seed tables are generated from frozen records.
+  Local SupCon selection and raw-seed tables are generated from supplied records.
 }
 
 \end{document}

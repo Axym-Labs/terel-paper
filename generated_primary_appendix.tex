@@ -1,8 +1,8 @@
 \begin{table}[H]
 \centering
 \small
-\caption{Raw corrected MNIST test accuracies (\%) in seed order 1101, 1202, 1303, 1404, 1505.}
-\label{tab:corrected-raw}
+\caption{Raw MNIST test accuracies (\%) in seed order 1101, 1202, 1303, 1404, 1505.}
+\label{tab:mnist-raw}
 \begin{tabular}{ll}
 \toprule
 Method & Raw values \\
@@ -20,7 +20,7 @@ Backpropagation (all layers) & 98.32, 98.32, 98.30, 98.28, 98.47 \\
 \centering
 \small
 \caption{Encoder-fit accounting averaged over five test seeds. Examples count sample presentations. MAC is the declared linear plus same-layer proxy, not a hardware energy measurement.}
-\label{tab:corrected-resources}
+\label{tab:encoder-resources}
 \begin{tabular}{lrrrrr}
 \toprule
 Method & Examples (M) & Opt. steps & Seconds & Peak MiB & MAC (G) \\
@@ -55,7 +55,7 @@ Backpropagation (all layers) & 2.050 & 4.100 & 0.000 & 0.006 & 2.046 \\
 \begin{table}[H]
 \centering
 \caption{Tuned samplewise streaming TeReL on the validation split (three seeds). The serial seed supplies time and memory accounting; concurrent repetition timings are excluded.}
-\label{tab:streaming-v2}
+\label{tab:samplewise-streaming}
 \begin{tabular}{lccc}
 \toprule
 Accuracy (\%) & Effective rank & Median variance & Encoder seconds \\

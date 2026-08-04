@@ -1,4 +1,4 @@
-"""Render the corrected TeReL figure from the frozen v2--v4 analyses."""
+"""Render the primary TeReL performance comparison from supplied analyses."""
 
 from __future__ import annotations
 
@@ -18,16 +18,16 @@ DARK = "#252525"
 
 def render(
     analysis_path: Path,
-    review_analysis_path: Path,
+    comparator_analysis_path: Path,
     normalization_analysis_path: Path,
     output_stem: Path,
 ) -> None:
     data = json.loads(analysis_path.read_text())
-    review = json.loads(review_analysis_path.read_text())
+    comparator = json.loads(comparator_analysis_path.read_text())
     normalization = json.loads(normalization_analysis_path.read_text())
     plt.style.use(Path(__file__).with_name("paper.mplstyle"))
     methods = [
-        ("random-bn", "Random\n+BN", NEUTRAL),
+        ("random-bn", "Rand.\n+BN", NEUTRAL),
         ("terel-s-all", "TeReL-S", SECONDARY),
         ("local-supcon", "Local\nSupCon", NEUTRAL),
         ("terel-last", "TeReL\nlast", SECONDARY),
@@ -35,21 +35,21 @@ def render(
         ("bp-all", "BP", DARK),
     ]
     contrasts = [
-        ("terel-minus-random-bn", r"TeReL $-$ random+BN", PRIMARY),
-        ("terel-s-minus-random", r"TeReL-S $-$ random (no BN)", SECONDARY),
-        ("terel-minus-local-supcon", r"TeReL $-$ Local SupCon", PRIMARY),
-        ("terel-minus-bp", r"TeReL $-$ BP", PRIMARY),
+        ("terel-minus-random-bn", "random+BN", PRIMARY),
+        ("terel-s-minus-random", r"TeReL-S $-$ random", SECONDARY),
+        ("terel-minus-local-supcon", "Local SupCon", PRIMARY),
+        ("terel-minus-bp", "BP", PRIMARY),
         ("terel-last-minus-all", r"last $-$ all", SECONDARY),
     ]
     fig, axes = plt.subplots(
-        1, 2, figsize=(6.85, 2.65),
-        gridspec_kw={"width_ratios": [1.12, 1.0], "wspace": 0.42},
+        1, 2, figsize=(7.05, 2.75),
+        gridspec_kw={"width_ratios": [1.12, 1.0], "wspace": 0.32},
     )
 
     ax = axes[0]
     for x, (key, label, color) in enumerate(methods):
         if key == "local-supcon":
-            record = review["local_supcon"]
+            record = comparator["local_supcon"]
         elif key == "random-bn":
             record = normalization["random_bn_calibrated"]
         else:
@@ -63,6 +63,7 @@ def render(
         ax.plot([x - 0.20, x + 0.20], [mean, mean], color=color, lw=2.0, zorder=4)
         ax.text(x, mean + 0.16, f"{mean:.2f}", ha="center", va="bottom", fontsize=6.5)
     ax.set_xticks(range(len(methods)), [item[1] for item in methods])
+    ax.tick_params(axis="x", labelsize=7.2)
     ax.set_ylabel("Test accuracy (%)")
     ax.set_ylim(94.1, 98.85)
     ax.text(-0.12, 1.02, "a", transform=ax.transAxes, fontweight="bold")
@@ -73,7 +74,7 @@ def render(
     ax.axvline(0, color="#B4B4B4", lw=0.9, zorder=1)
     for y, (key, label, color) in enumerate(contrasts):
         record = (
-            review["terel_minus_local_supcon"]
+            comparator["terel_minus_local_supcon"]
             if key == "terel-minus-local-supcon"
             else normalization["terel_minus_random_bn"]
             if key == "terel-minus-random-bn"
@@ -96,7 +97,7 @@ def render(
     ax.text(-0.12, 1.02, "b", transform=ax.transAxes, fontweight="bold")
     ax.grid(axis="x", color="#DDDDDD", linewidth=0.6)
     ax.spines[["top", "right", "left"]].set_visible(False)
-    ax.tick_params(axis="y", length=0)
+    ax.tick_params(axis="y", length=0, labelsize=7.2)
 
     fig.savefig(
         output_stem.with_suffix(".pdf"),
@@ -111,14 +112,14 @@ def render(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("analysis", type=Path)
-    parser.add_argument("review_analysis", type=Path)
+    parser.add_argument("comparator_analysis", type=Path)
     parser.add_argument("normalization_analysis", type=Path)
     parser.add_argument("--output", type=Path,
-                        default=Path(__file__).with_name("corrected-performance-v2"))
+                        default=Path(__file__).with_name("mnist-performance-comparison"))
     args = parser.parse_args()
     render(
         args.analysis,
-        args.review_analysis,
+        args.comparator_analysis,
         args.normalization_analysis,
         args.output,
     )
