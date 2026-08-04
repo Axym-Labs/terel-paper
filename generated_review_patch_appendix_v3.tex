@@ -1,0 +1,37 @@
+\begin{table}[H]
+\centering
+\small
+\caption{Complete validation selection for Local SupCon (accuracy \%, three seeds). Bold marks the predeclared winner.}
+\label{tab:local-supcon-validation}
+\begin{tabular}{rrc}
+\toprule
+Learning rate & Temperature & Accuracy \\
+\midrule
+1e-04 & 0.1 & 96.49 $\pm$ 0.15 \\
+1e-04 & 0.2 & 95.60 $\pm$ 0.12 \\
+3e-04 & 0.1 & 96.63 $\pm$ 0.03 \\
+3e-04 & 0.2 & 95.98 $\pm$ 0.11 \\
+1e-03 & 0.1 & \textbf{96.90 $\pm$ 0.03} \\
+1e-03 & 0.2 & 96.20 $\pm$ 0.02 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Local SupCon confirmatory raw values and resource state. Inference retains encoder parameters and batch-normalization buffers; optimizer state is training-only.}
+\label{tab:local-supcon-raw}
+\begin{tabular}{lc}
+\toprule
+Quantity & Value \\
+\midrule
+Test accuracy by seed (\%) & 96.97, 97.12, 96.99, 96.98, 96.83 \\
+Mean encoder seconds & 82.1 \\
+Model parameters (MiB) & 2.040 \\
+Optimizer state (MiB) & 4.080 \\
+Normalization buffers (MiB) & 0.006 \\
+Inference encoder (MiB) & 2.046 \\
+\bottomrule
+\end{tabular}
+\end{table}

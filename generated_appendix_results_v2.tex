@@ -28,7 +28,26 @@ Method & Examples (M) & Opt. steps & Seconds & Peak MiB & MAC (G) \\
 \TeReL{} (all layers) & 3.00 & 11760 & 107.6 & 76.7 & 3981.3 \\
 \TeReL{} (last layer) & 3.00 & 11760 & 107.7 & 76.7 & 3981.3 \\
 \TeReL{}-S (all layers) & 0.50 & 1960 & 27.4 & 77.7 & 1126.4 \\
+Random features (all layers) & 0.00 & 0 & 0.0 & 0.0 & 0.0 \\
 Backpropagation (all layers) & 3.00 & 11760 & 43.4 & 225.4 & 4815.4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Training-state decomposition in MiB. Model parameters are those fitted during encoder training (the BP entry therefore includes its supervised head). Algorithm state is the TeReL lateral/statistics state after separating normalization buffers; optimizer and algorithm state are training-only. Inference encoder state retains hidden-layer parameters and normalization buffers but discards the BP head and TeReL state.}
+\label{tab:training-state-decomposition}
+\begin{tabular}{lrrrrr}
+\toprule
+Method & Model params & Optimizer & Algorithm & Norm. & Inference encoder \\
+\midrule
+\TeReL{} (all layers) & 2.040 & 4.080 & 1.262 & 0.006 & 2.046 \\
+\TeReL{} (last layer) & 2.040 & 4.080 & 1.262 & 0.006 & 2.046 \\
+\TeReL{}-S (all layers) & 2.034 & 4.068 & 1.262 & 0.000 & 2.034 \\
+Random features (all layers) & 2.034 & 0.000 & 0.000 & 0.000 & 2.034 \\
+Backpropagation (all layers) & 2.050 & 4.100 & 0.000 & 0.006 & 2.046 \\
 \bottomrule
 \end{tabular}
 \end{table}
