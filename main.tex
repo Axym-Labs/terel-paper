@@ -94,7 +94,7 @@ or biological realism.
 gradient.  The three objective terms first define a detached regularized
 target.  Each neuron then tracks its preactivation residual to this target.
 For a linear synapse, the gradient factors into the neuron's residual state and
-the presynaptic activity.  Pairs of the same residual states form a dense
+the presynaptic activity.  Their running pairwise second moment defines a dense
 inhibitory operator.  Both factors of the feedforward rule are available
 at the synapse, giving it a Hebbian two-factor form; the signed
 lateral change is anti-Hebbian.  \Cref{sec:method} states both signs explicitly.
@@ -202,10 +202,10 @@ coupling, and let $\eta>0$ be the pass size.  One lateral pass gives
 s_t=b_t-\eta\kappa M b_t.
 \label{eq:residual-dynamics}
 \end{equation}
-This direct correction requires one matrix--vector product and no iterative
+The correction requires one matrix--vector product and no iterative
 settling.  Setting $\kappa=0$ recovers $s_t=b_t$ and hence the exact
 soft-objective gradient.  Nonzero inhibition deliberately modifies that
-gradient by suppressing directions with a large stored residual moment.
+gradient by subtracting the component $\eta\kappa M b_t$.
 
 Now define the detached preactivation target
 $\hat a_t=\stopgrad(a_t-s_t)$.  Its mean-squared error gives
@@ -219,8 +219,8 @@ $\hat a_t=\stopgrad(a_t-s_t)$.  Its mean-squared error gives
 =\frac{2\lambda_S}{D}s_t.
 \label{eq:feedforward-gradient}
 \end{equation}
-This is the intended two-factor Hebbian form at the level of the gradient:
-presynaptic activity times the state of the postsynaptic neuron.  Plain
+The gradient has the intended two-factor Hebbian form: presynaptic activity
+times the state of the postsynaptic neuron.  Plain
 gradient descent would use
 $\Delta W=-\alpha(2\lambda_S/D)s_tx_t^\top$, which is the update used by
 \TeReL{}.  We do not absorb the descent sign into the word ``Hebbian.''
@@ -235,9 +235,9 @@ M^+ = \rho_M M +(1-\rho_M)\frac{1}{D}s_ts_t^\top.
 The positive-semidefinite matrix $M$ stores residual-state second moments and
 appears with a negative sign in \cref{eq:residual-dynamics}.  Equivalently, the
 signed lateral weight is $L^{\rm lat}=-\eta\kappa M$, whose update contains
-$-\eta\kappa(1-\rho_M)s_{t,j}s_{t,k}$.  Positive coactivity makes
-$L^{\rm lat}_{jk}$ more negative, which is the anti-Hebbian convention used
-here.  Both endpoints expose neuron states: the lateral update uses
+$-\eta\kappa(1-\rho_M)s_{t,j}s_{t,k}$.  Positive coactivity therefore
+contributes a negative term to $L^{\rm lat}_{jk}$, which is the anti-Hebbian
+convention used here.  Both endpoints expose neuron states: the lateral update uses
 $s_{t,j}s_{t,k}$, not a residual paired with an unrelated activation.  The
 diagonal of $M$ is nonnegative and acts as learned self-inhibition; the
 off-diagonal entries connect distinct neurons and need not be elementwise
@@ -258,9 +258,10 @@ C_k=\offdiag\left[\frac1B\sum_{t\in\mathcal B_k}(z_{k,t}-\mu_{k-1})
 \end{equation}
 The direct penalty $\|C_k\|_F^2/D$ has activation gradient
 $4C_k(z_{k,t}-\mu_{k-1})/(BD)$.  Replacing $C_k$ by stored $A_{k-1}$ gives the
-direction in \cref{eq:activation-residual}, up to a positive scale.  This is a
-lagged gradient proxy, not an equality between scalar objectives.  The direct
-control in \cref{sec:results} tests whether the approximation matters.
+direction in \cref{eq:activation-residual}, up to a positive scale.  The
+substitution is a lagged gradient proxy, not an equality between scalar
+objectives.  The direct minibatch control in \cref{sec:results} tests whether
+the approximation matters in the offline relaxation.
 
 \subsection{Execution order and locality}\label{sec:gradients}
 
@@ -332,11 +333,11 @@ For a width-$D$ layer, \TeReL{} stores three causal scalars per neuron:
 $p_j$, $\mu_j$, and $\sigma_j^2$, together with one layer-validity flag.  The
 auxiliary operators $A,M\in\mathbb R^{D\times D}$ contribute $2D^2$
 parameters; they are not temporal state.  Target construction applies $A$
-once, and the inhibitory correction applies $M$ once.  In the reported encoder,
-the 655,360 auxiliary parameters are 1.23 times the 533,248 feedforward
-parameters.  Optimizer moments and temporary activations form separate
-resource categories, and none of this training-only storage is needed by the
-encoder at inference.
+once, and the inhibitory correction applies $M$ once; updating the operators
+forms two rank-one outer products.  In the reported encoder, the 655,360
+auxiliary parameters are 1.23 times the 533,248 feedforward parameters.
+Optimizer moments and temporary activations form separate resource categories,
+and none of this training-only storage is needed by the encoder at inference.
 
 \section{Relation to prior work}\label{sec:related}
 
@@ -374,9 +375,9 @@ makes contrastive prediction causal and local across depth and time, using
 pre- and postsynaptic activity, predictive dendritic input, and broadcast
 modulation~\cite{illing2021}.  LoCo instead permits the next block's loss to
 update an overlap between adjacent blocks~\cite{xiong2020}.  \TeReL{} uses no
-negative set or predictive decoder.  Its price is two dense, lagged same-layer
-operators, and its main experiment obtains adjacency from labels rather than
-from an unlabeled stream.
+negative set or predictive decoder.  It instead maintains two dense, lagged
+same-layer operators, and its main experiment obtains adjacency from labels
+rather than from an unlabeled stream.
 
 \paragraph{Regularized and blockwise self-supervision.}
 VICReg and Barlow Twins avoid collapse without negatives by regularizing
@@ -564,8 +565,8 @@ the task-aligned teaching signal in this controlled experiment.
 The other two terms prevent different degeneracies.  Without gated variance
 expansion, the median feature variance falls to $7.7\times10^{-5}$.  Without
 decorrelation, feature variance remains high but effective rank falls to 2.8.
-BatchNorm alone prevents neither failure.  These interventions assign distinct
-empirical functions to the temporal, variance, and decorrelation terms, as
+BatchNorm alone prevents neither failure.  Together, these interventions assign
+distinct empirical functions to the temporal, variance, and decorrelation terms, as
 predicted by the soft-SFA formulation.
 
 The representation operator $A$ is also an approximation rather than a hidden
@@ -592,10 +593,11 @@ can make neighboring observations misleading.  Video, audio, and other
 continuous streams require direct evaluation across several independent
 sequences and timescales.
 
-Local in time does not mean small in width.  Two dense lateral matrices require
-$O(D^2)$ auxiliary parameters and same-layer communication, and the inhibitory
-correction adds one matrix--vector product per observation.  Sparse or low-rank operators are
-promising only if they preserve the representation gain.  The implementation
+Local in time does not mean small in width.  The two dense same-layer operators
+require $O(D^2)$ auxiliary parameters and communication; their use and update
+add two matrix--vector products and two rank-one products per observation.
+Sparse or low-rank operators are promising only if they preserve the
+representation gain.  The implementation
 also uses an exact activation derivative and synchronized dense linear
 algebra.  The locality claim concerns information paths; it is not a claim of
 biological realism, low energy, or efficient present-day hardware.
@@ -648,7 +650,7 @@ Greedy InfoMax & natural-order InfoNCE & isolated modules & deep nonlinear modul
 CLAPP & causal contrastive prediction & local in depth and time & deep nonlinear layers & predictive input, modulation, negatives\\
 LoCo & paired-view contrastive & overlapping minibatch blocks & deep nonlinear blocks & projection heads and negatives\\
 Blockwise SSL & paired-view invariance & minibatch blocks & deep nonlinear blocks & batch statistics\\
-\TeReL{} & temporal soft-SFA & one observation & deep nonlinear layers & $3D+1$ causal scalars; $2D^2$ auxiliary parameters\\
+\TeReL{} & temporal soft-SFA & one observation & deep nonlinear layers & $3D$ causal scalars, one flag; $2D^2$ auxiliary parameters\\
 \bottomrule
 \end{tabular}
 \end{table}

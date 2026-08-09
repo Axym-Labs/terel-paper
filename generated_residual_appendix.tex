@@ -17,11 +17,11 @@ Effective rank & 140.71, 144.54, 144.91, 140.45, 143.03 \\
 \begin{table}[H]
 \centering
 \small
-\caption{Training resources for samplewise \TeReL{}. Causal state, auxiliary parameters, and optimizer state are reported separately.}
+\caption{Training resources for samplewise \TeReL{}. Causal state, auxiliary parameters, feedforward parameters, and optimizer state are reported separately.}
 \label{tab:residual-state-resources}
 \begin{tabular}{rrrrr}
 \toprule
-Updates & Causal scalars & Auxiliary parameters & Feedforward parameters & Optimizer state \\
+Updates & Causal values & Auxiliary parameters & Feedforward parameters & Optimizer bytes \\
 \midrule
 100,000 & 2,306 & 655,360 & 533,248 & 0 \\
 \bottomrule
