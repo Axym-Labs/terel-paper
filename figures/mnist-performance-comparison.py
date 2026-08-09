@@ -25,54 +25,48 @@ def _t_interval(values: np.ndarray) -> tuple[float, float, float]:
     return mean, mean - half, mean + half
 
 
-def _final_values(output_root: Path) -> np.ndarray:
-    paths = sorted((output_root / "mnist" / "terel-s-residual").glob("seed-*.json"))
+def _values(output_root: Path) -> np.ndarray:
+    paths = sorted(output_root.glob("seed-*.json"))
     values = [json.loads(path.read_text())["metrics"]["accuracy"] for path in paths]
-    if len(values) != 5:
-        raise ValueError(f"Expected five frozen final records, found {len(values)}")
+    if not values:
+        raise ValueError(f"No records found in {output_root}")
     return np.asarray(values, dtype=float)
 
 
 def render(
-    residual_output: Path,
-    validation_ledger_path: Path,
+    final_output: Path,
     primary_analysis_path: Path,
     comparator_analysis_path: Path,
     normalization_analysis_path: Path,
     output_stem: Path,
 ) -> None:
-    residual = _final_values(residual_output)
-    validation = json.loads(validation_ledger_path.read_text())
+    residual = _values(final_output)
     primary = json.loads(primary_analysis_path.read_text())
     comparator = json.loads(comparator_analysis_path.read_text())
     normalization = json.loads(normalization_analysis_path.read_text())
     plt.style.use(Path(__file__).with_name("paper.mplstyle"))
 
     methods = [
-        ("TeReL-S", residual, PRIMARY),
+        ("TeReL", residual, PRIMARY),
         ("Random\n+BN", np.asarray(normalization["random_bn_calibrated"]["raw"]), NEUTRAL),
         ("Local\nSupCon", np.asarray(comparator["local_supcon"]["raw"]), NEUTRAL),
-        ("TeReL-\nbatched", np.asarray(primary["methods"]["terel-all"]["raw"]), SECONDARY),
+        ("TeReL-\nOffline", np.asarray(primary["methods"]["terel-all"]["raw"]), SECONDARY),
         ("BP", np.asarray(primary["methods"]["bp-all"]["raw"]), NEUTRAL),
     ]
 
-    residual_difference = 100 * np.asarray(
-        validation["paired_accuracy"]["residual_minus_reference"]["values"], dtype=float
-    )
     contrasts = [
-        ("Residual state $-$\nmatched reference", residual_difference, PRIMARY),
         (
-            "TeReL-batched $-$\nRandom+BN",
+            "TeReL-Offline $-$\nRandom+BN",
             100 * np.asarray(normalization["terel_minus_random_bn"]["raw_differences"]),
             SECONDARY,
         ),
         (
-            "TeReL-batched $-$\nLocal SupCon",
+            "TeReL-Offline $-$\nLocal SupCon",
             100 * np.asarray(comparator["terel_minus_local_supcon"]["raw_differences"]),
             SECONDARY,
         ),
         (
-            "TeReL-batched $-$ BP",
+            "TeReL-Offline $-$ BP",
             100 * np.asarray(primary["contrasts"]["terel-minus-bp"]["raw_differences"]),
             SECONDARY,
         ),
@@ -134,8 +128,7 @@ def render(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("residual_output", type=Path)
-    parser.add_argument("validation_ledger", type=Path)
+    parser.add_argument("final_output", type=Path)
     parser.add_argument("primary_analysis", type=Path)
     parser.add_argument("comparator_analysis", type=Path)
     parser.add_argument("normalization_analysis", type=Path)
@@ -145,8 +138,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     render(
-        args.residual_output,
-        args.validation_ledger,
+        args.final_output,
         args.primary_analysis,
         args.comparator_analysis,
         args.normalization_analysis,

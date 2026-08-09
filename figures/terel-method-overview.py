@@ -1,4 +1,4 @@
-"""Render the central TeReL-S mechanism schematic used as Figure 1.
+"""Render the central TeReL mechanism schematic used as Figure 1.
 
 The composition deliberately keeps algebra and graphical marks separate: text
 never sits inside a container, arrows occupy dedicated gutters, and the three
@@ -87,25 +87,25 @@ ax.axis("off")
 
 # Three stages, one reading direction. Whitespace—not containers—separates them.
 stage_header(ax, 0.005, "a", "Form a local target", "Three soft-SFA forces")
-stage_header(ax, 0.365, "b", "Define the neuron state", "Residual, then same-layer settling")
-stage_header(ax, 0.700, "c", "Update local synapses", "The settled state supplies both rules")
+stage_header(ax, 0.365, "b", "Define the neuron state", "Residual, then one lateral pass")
+stage_header(ax, 0.700, "c", "Update local synapses", "The neuron state supplies both rules")
 
-# a. The target is displayed in dependency order. The thin colored strokes are
+# a. The target is built from the three objective forces. The colored strokes are
 # keys, not backgrounds, so none of the mathematical text collides with shapes.
-objective_term(ax, 0.760, ORANGE, "SLOW", r"$\omega_t\,(z_t-p_t)$")
+objective_term(ax, 0.760, ORANGE, "SLOW", r"$I_t\,(z_t-p_t)$")
 objective_term(
     ax,
     0.650,
     TEAL,
     "NONCOLLAPSE",
-    r"$-\frac{\lambda_V}{\lambda_S}\,g\odot(z_t-m)$",
+    r"$-\frac{\lambda_V}{\lambda_S}\,g\odot(z_t-\mu)$",
 )
 objective_term(
     ax,
     0.540,
     BLUE,
     "DECORRELATE",
-    r"$+\frac{\lambda_C}{2\lambda_S}\,A(z_t-m)$",
+    r"$+\frac{\lambda_C}{2\lambda_S}\,A(z_t-\mu)$",
 )
 ax.plot([0.048, 0.286], [0.460, 0.460], color=HAIRLINE, linewidth=0.9)
 ax.text(0.048, 0.405,
@@ -118,7 +118,7 @@ ax.text(0.048, 0.325, r"$\hat z_t=\mathrm{sg}(z_t-r_t)$", fontsize=10.2,
 arrow(ax, 0.315, 0.575, 0.350, 0.575)
 
 # b. First map the activation residual to the neuron's preactivation. Then let
-# only neurons in the same layer settle that state through M.
+# one same-layer lateral pass modifies that state through M.
 ax.text(0.392, 0.745, "activation residual", fontsize=6.8, weight="bold",
         color=MUTED, va="center")
 ax.text(0.392, 0.690, r"$z_t-\hat z_t$", fontsize=10.2, color=INK, va="center")
@@ -130,7 +130,7 @@ ax.text(0.392, 0.525, "base neuron state", fontsize=6.8, weight="bold",
 ax.text(0.392, 0.470, r"$b_t=J_{\phi,t}^{\mathsf{T}}(z_t-\hat z_t)$",
         fontsize=9.6, color=INK, va="center")
 
-# A separate, quiet settling motif: b enters from the left, same-layer coupling
+# A separate, quiet lateral motif: b enters from the left, same-layer coupling
 # acts along the center line, and s leaves on the right.
 ax.text(0.392, 0.352, r"$b_t$", fontsize=9.8, color=INK, va="center")
 ax.plot([0.425, 0.565], [0.352, 0.352], color=LIGHT_PURPLE, linewidth=4.4,
@@ -140,7 +140,7 @@ ax.text(0.495, 0.391, "same-layer inhibition", fontsize=6.8, color=PURPLE,
         ha="center", va="center")
 ax.text(0.579, 0.352, r"$s_t$", fontsize=10.0, color=PURPLE, weight="bold",
         va="center")
-ax.text(0.392, 0.275, r"$(I+\kappa M)s_t\approx b_t$", fontsize=9.1,
+ax.text(0.392, 0.275, r"$s_t=b_t-\eta\kappa M b_t$", fontsize=9.1,
         color=INK, va="center")
 
 arrow(ax, 0.655, 0.575, 0.690, 0.575)

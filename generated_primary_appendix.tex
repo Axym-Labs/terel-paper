@@ -7,8 +7,8 @@
 \toprule
 Method & Raw values \\
 \midrule
-\TeReLBatched{} (all layers) & 97.30, 97.30, 97.21, 97.28, 97.41 \\
-\TeReLBatched{} (last layer) & 97.14, 97.18, 97.28, 97.09, 97.01 \\
+\TeReLOffline{} (all layers) & 97.30, 97.30, 97.21, 97.28, 97.41 \\
+\TeReLOffline{} (last layer) & 97.14, 97.18, 97.28, 97.09, 97.01 \\
 Random, no normalization (all layers) & 94.66, 95.27, 95.12, 95.33, 95.27 \\
 Backpropagation (all layers) & 98.32, 98.32, 98.30, 98.28, 98.47 \\
 \bottomrule
@@ -24,8 +24,8 @@ Backpropagation (all layers) & 98.32, 98.32, 98.30, 98.28, 98.47 \\
 \toprule
 Method & Examples (M) & Opt. steps & Seconds & Peak MiB & MAC (G) \\
 \midrule
-\TeReLBatched{} (all layers) & 3.00 & 11760 & 107.6 & 76.7 & 3981.3 \\
-\TeReLBatched{} (last layer) & 3.00 & 11760 & 107.7 & 76.7 & 3981.3 \\
+\TeReLOffline{} (all layers) & 3.00 & 11760 & 107.6 & 76.7 & 3981.3 \\
+\TeReLOffline{} (last layer) & 3.00 & 11760 & 107.7 & 76.7 & 3981.3 \\
 Random, no normalization (all layers) & 0.00 & 0 & 0.0 & 0.0 & 0.0 \\
 Backpropagation (all layers) & 3.00 & 11760 & 43.4 & 225.4 & 4815.4 \\
 \bottomrule
@@ -35,15 +35,15 @@ Backpropagation (all layers) & 3.00 & 11760 & 43.4 & 225.4 & 4815.4 \\
 \begin{table}[H]
 \centering
 \small
-\caption{Training state in MiB. Model parameters include every parameter fitted during encoder training, including the supervised head for backpropagation. Algorithm state contains the \TeReL{} lateral and statistical state but excludes normalization buffers. Optimizer and algorithm state are training-only. The inference encoder retains hidden-layer parameters and normalization buffers, but discards the supervised head and \TeReL{} state.}
+\caption{Training storage in MiB. Model parameters include every parameter fitted by the optimizer, including the supervised head for backpropagation. Auxiliary storage contains \TeReLOffline{} lateral and statistical buffers and excludes normalization buffers. Optimizer and auxiliary storage are training-only. The inference encoder retains hidden-layer parameters and normalization buffers but discards the supervised head and auxiliary buffers.}
 \label{tab:training-state-decomposition}
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{lrrrrr}
 \toprule
-Method & Model params & Optimizer & Algorithm & Norm. & Inference encoder \\
+Method & Model params & Optimizer & Auxiliary & Norm. & Inference encoder \\
 \midrule
-\TeReLBatched{} (all layers) & 2.040 & 4.080 & 1.262 & 0.006 & 2.046 \\
-\TeReLBatched{} (last layer) & 2.040 & 4.080 & 1.262 & 0.006 & 2.046 \\
+\TeReLOffline{} (all layers) & 2.040 & 4.080 & 1.262 & 0.006 & 2.046 \\
+\TeReLOffline{} (last layer) & 2.040 & 4.080 & 1.262 & 0.006 & 2.046 \\
 Random, no normalization (all layers) & 2.034 & 0.000 & 0.000 & 0.000 & 2.034 \\
 Backpropagation (all layers) & 2.050 & 4.100 & 0.000 & 0.006 & 2.046 \\
 \bottomrule

@@ -6,8 +6,8 @@
 \toprule
 Method & Accuracy \\
 \midrule
-\TeReLBatched{} (all layers) & 97.30 $\pm$ 0.07 \\
-\TeReLBatched{} (last layer) & 97.14 $\pm$ 0.10 \\
+\TeReLOffline{} (all layers) & 97.30 $\pm$ 0.07 \\
+\TeReLOffline{} (last layer) & 97.14 $\pm$ 0.10 \\
 Random, no normalization (all layers) & 95.13 $\pm$ 0.27 \\
 Backpropagation (all layers) & 98.34 $\pm$ 0.08 \\
 \bottomrule
@@ -22,8 +22,8 @@ Backpropagation (all layers) & 98.34 $\pm$ 0.08 \\
 \toprule
 Contrast & Difference [95\% interval] \\
 \midrule
-\TeReLBatched{} $-$ BP & -1.04 [-1.08, -0.99] \\
-\TeReLBatched{} $-$ random, no normalization & 2.17 [1.83, 2.51] \\
+\TeReLOffline{} $-$ BP & -1.04 [-1.08, -0.99] \\
+\TeReLOffline{} $-$ random, no normalization & 2.17 [1.83, 2.51] \\
 last $-$ all layers & -0.16 [-0.37, 0.05] \\
 \bottomrule
 \end{tabular}
