@@ -51,8 +51,9 @@ encoder without carrying an error through depth or time?  We derive a
 regularized target from a soft SFA objective and map its residual to the
 preactivation of each neuron.  Without lateral coupling, the outer product of
 this neuron state and presynaptic activity is the exact feedforward gradient.
-One learned inhibitory pass modifies the state used for the feedforward update, and
-pairs of the same states drive an anti-Hebbian lateral rule.
+One pass through a learned inhibitory operator modifies the state used for the
+feedforward update, and pairs of the same states drive an anti-Hebbian lateral
+rule.
 
 The resulting method, Temporal Regularized Learning (\TeReL{}),
 processes one observation at a time, retains fixed-size detached state, and
@@ -64,10 +65,10 @@ improves a matched samplewise reference by $1.42$ percentage points while
 preserving effective rank.  A minibatch relaxation, \TeReLOffline{}, reaches
 $97.30\pm0.07$\%, compared with $98.34\pm0.08$\% for presentation-matched
 backpropagation and $96.98\pm0.10$\% for Local SupCon.  Objective ablations and
-a direct-covariance control identify the roles of the three regularizers and
-the lagged decorrelation signal.  The evidence establishes local learning
-under a controlled temporal relation; it does not show that arbitrary natural
-adjacency is informative.}
+a direct-covariance control in the minibatch relaxation identify the roles of
+the three regularizers and the lagged decorrelation signal.  The evidence
+establishes local learning under a controlled temporal relation; it does not
+show that arbitrary natural adjacency is informative.}
 
 \publicationleadfigure[0.34\textheight]{\LeadFigurePath}{\LeadFigureCaption}
 \label{fig:overview}
@@ -93,8 +94,8 @@ or biological realism.
 gradient.  The three objective terms first define a detached regularized
 target.  Each neuron then tracks its preactivation residual to this target.
 For a linear synapse, the gradient factors into the neuron's residual state and
-the presynaptic activity.  We use pairs of the same residual states to learn a
-dense inhibitory operator.  Both factors of the feedforward rule are available
+the presynaptic activity.  Pairs of the same residual states form a dense
+inhibitory operator.  Both factors of the feedforward rule are available
 at the synapse, giving it a Hebbian two-factor form; the signed
 lateral change is anti-Hebbian.  \Cref{sec:method} states both signs explicitly.
 Plain stochastic gradient descent applies this outer product directly; no
@@ -102,8 +103,8 @@ optimizer moments alter the synaptic update.
 
 Inhibitory correction of the residual state is the central distinction between
 \TeReL{} and the exact detached soft-SFA gradient.  In a matched batch-size-one
-experiment, it recovers $1.42$ accuracy points without sacrificing effective
-rank.  \TeReLOffline{} provides a less restrictive performance reference.  It
+experiment, it raises validation accuracy by $1.42$ points without sacrificing
+effective rank.  \TeReLOffline{} provides a less restrictive performance reference.  It
 retains adjacent activations in a short computation graph and uses minibatch
 normalization; it is not the definition of the method.
 
@@ -195,7 +196,8 @@ preactivation residual tracked by neuron $j$, not an error delivered from
 another layer.
 
 We next let same-layer inhibition act on this state.  Let $M\succeq0$ denote
-the learned second moment of the neuron states.  One lateral pass gives
+the running second moment of the neuron states, let $\kappa\geq0$ set its
+coupling, and let $\eta>0$ be the pass size.  One lateral pass gives
 \begin{equation}
 s_t=b_t-\eta\kappa M b_t.
 \label{eq:residual-dynamics}
@@ -248,9 +250,10 @@ because replacing its representation statistic by residual-state covariance
 would change the objective rather than merely realize its gradient.
 
 The operator $A$ is a lagged proxy for the current representation covariance.
-Let
+For minibatch $\mathcal B_k$ of size $B$, using the mean $\mu_{k-1}$ available
+before that batch, let
 \begin{equation}
-C_k=\offdiag\left[\frac1B\sum_t(z_{k,t}-\mu_{k-1})
+C_k=\offdiag\left[\frac1B\sum_{t\in\mathcal B_k}(z_{k,t}-\mu_{k-1})
 (z_{k,t}-\mu_{k-1})^\top\right].
 \end{equation}
 The direct penalty $\|C_k\|_F^2/D$ has activation gradient
@@ -307,9 +310,9 @@ detached and fixed in size; the rule is also local in time.
 \TeReLOffline{} is a performance reference that relaxes temporal locality.  It
 optimizes \cref{eq:terel} directly on class-homogeneous chunks, keeps
 $p_t=z_{t-1}$ live within a chunk, and uses BatchNorm.  The temporal derivative
-then includes a future term,
+then includes a future term.  With $N_I=\sum_t I_t$ valid transitions, it is
 \begin{equation}
-\frac{2\lambda_S}{N_ID}
+\frac{2\lambda_S}{N_I D}
 \left[I_t(z_t-z_{t-1})-I_{t+1}(z_{t+1}-z_t)\right].
 \label{eq:batch-gradient}
 \end{equation}
@@ -327,11 +330,13 @@ local in this sense.
 
 For a width-$D$ layer, \TeReL{} stores three causal scalars per neuron:
 $p_j$, $\mu_j$, and $\sigma_j^2$, together with one layer-validity flag.  The
-learned operators $A,M\in\mathbb R^{D\times D}$ contribute $2D^2$ auxiliary
-parameters; they are not temporal state.  The lateral correction applies one
-dense matrix--vector product.  Optimizer moments and temporary activations form
-separate resource categories, and none of this training-only storage is needed
-by the encoder at inference.
+auxiliary operators $A,M\in\mathbb R^{D\times D}$ contribute $2D^2$
+parameters; they are not temporal state.  Target construction applies $A$
+once, and the inhibitory correction applies $M$ once.  In the reported encoder,
+the 655,360 auxiliary parameters are 1.23 times the 533,248 feedforward
+parameters.  Optimizer moments and temporary activations form separate
+resource categories, and none of this training-only storage is needed by the
+encoder at inference.
 
 \section{Relation to prior work}\label{sec:related}
 
@@ -422,8 +427,8 @@ $\rho_\mu=\rho_A=\rho_M=0.99$.  Residual inhibition uses $\kappa=1000$, one
 lateral pass of size $0.1$, and the feature-normalized full second moment in
 \cref{eq:residual-lateral-update}.  Every sample causes one optimizer update.
 
-The matched samplewise reference changes only the residual-state inhibition:
-it applies the exact detached soft-objective gradient with $M=0$.  This comparison
+The matched samplewise reference omits the inhibitory pass, so $s_t=b_t$ and
+the update follows the exact detached soft-objective gradient.  This comparison
 isolates the mechanism introduced in \cref{sec:neuron-state}; architecture,
 order, normalization, optimizer, state timescales, and data presentations are
 identical.
@@ -465,7 +470,7 @@ lateral passes, with three validation runs for the final comparisons.  It
 selects plain SGD at learning rate $10^{-2}$ and one pass; four passes differ
 by only 0.04 accuracy points, while the next two declared learning rates fail
 because they produce invalid covariance spectra.  The selected configuration is frozen before five
-predetermined final runs.  The matched $M=0$ comparison, Local SupCon grid,
+predetermined final runs.  The matched no-inhibition comparison, Local SupCon grid,
 objective interventions, and direct-covariance control remain validation-only.
 No final result selects among alternative \TeReL{} configurations.
 
@@ -491,7 +496,7 @@ residual-lateral matrices and remain noncollapsed.  Its mean accuracy is 1.46
 points below the independently seeded \TeReLOffline{} reference.
 
 The validation comparison changes only residual inhibition.  Accuracy is
-$95.91\pm0.11$\% with inhibition and $94.49\pm0.15$\% for the $M=0$ reference.  The
+$95.91\pm0.11$\% with inhibition and $94.49\pm0.15$\% for the no-inhibition reference.  The
 paired gain is $1.42$ points, with 95\% Student-$t$ interval $[1.32,1.52]$.
 Effective rank is 147.0 for \TeReL{} and 140.9 for the reference; the accuracy
 gain does not come from a lower-dimensional collapse.
@@ -614,8 +619,9 @@ Under controlled MNIST adjacency, residual-state inhibition improves a matched
 samplewise reference by 1.42 points and the frozen method reaches
 $\FinalTeReLAccuracy\pm\FinalTeReLSSD$\% in final evaluation.  The batched
 relaxation reaches 97.30\%, while mechanism controls distinguish temporal
-teaching, variance support, and decorrelation.  These results establish deep
-slow-feature learning local in space and time for the controlled relation.  A
+teaching, variance support, and decorrelation in that relaxation.  These
+results establish deep slow-feature learning local in space and time for the
+controlled relation.  A
 general result for natural temporal order remains open.
 
 \bibliographystyle{unsrtnat}
@@ -726,7 +732,7 @@ $b_t$ by the inhibited state $s_t$ and deliberately modifies this direction.
 With an undetached temporal reference, $z_t$ also appears as the predecessor in
 pair $t+1$, yielding \cref{eq:batch-gradient}.
 
-\TeReLOffline{} uses $h_{\mathcal B}=N_{\eta,\mathcal B}(a_{\mathcal B})$ and
+\TeReLOffline{} uses $h_{\mathcal B}=N_{\theta_N,\mathcal B}(a_{\mathcal B})$ and
 $z_t=\phi(h_t)$, where $N$ is training-mode BatchNorm.  Let
 $e_s=\partial L/\partial z_s$, $r_s=e_s\odot\phi'(h_s)$, and
 $J^N_{st}=\partial h_s/\partial a_t$.  Its exact same-layer chain rule is
@@ -736,7 +742,7 @@ u_t=\sum_{s\in\mathcal B}(J^N_{st})^\top r_s,\qquad
 \frac{\partial L}{\partial c}=\sum_tu_t,
 \end{equation}
 with
-$\partial L/\partial\eta=\sum_s(\partial h_s/\partial\eta)^\top r_s$ for the
+$\partial L/\partial\theta_N=\sum_s(\partial h_s/\partial\theta_N)^\top r_s$ for the
 affine parameters.  BatchNorm mixes examples within each coordinate; this
 expression admits no error from another learned layer.
 
