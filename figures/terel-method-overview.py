@@ -1,11 +1,16 @@
-"""Render the reader-first TeReL-S mechanism schematic used as Figure 1."""
+"""Render the central TeReL-S mechanism schematic used as Figure 1.
+
+The composition deliberately keeps algebra and graphical marks separate: text
+never sits inside a container, arrows occupy dedicated gutters, and the three
+stages follow one left-to-right reading order.
+"""
 
 from datetime import datetime, timezone
 import logging
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-from matplotlib.patches import FancyArrowPatch, FancyBboxPatch, Circle
+from matplotlib.patches import FancyArrowPatch
 
 
 logging.getLogger("fontTools.ttLib.tables._h_e_a_d").setLevel(logging.ERROR)
@@ -19,148 +24,179 @@ plt.rcParams.update(
 )
 
 PURPLE = "#3F21B6"
-PURPLE_LIGHT = "#EEEAFB"
-ORANGE = "#B95A16"
-ORANGE_LIGHT = "#FFF0E4"
-TEAL = "#14786B"
-TEAL_LIGHT = "#E5F4F1"
-INK = "#202127"
-MUTED = "#62636B"
-MID = "#AAAAB2"
-PALE = "#F5F5F7"
+ORANGE = "#B85C16"
+TEAL = "#0F766E"
+BLUE = "#2B67A0"
+INK = "#111827"
+MUTED = "#59616E"
+HAIRLINE = "#D3D6DC"
+LIGHT_PURPLE = "#DCD5F7"
 
 
-def box(ax, x, y, w, h, text, *, edge=PURPLE, face="white", size=9.0,
-        weight="normal", color=INK, radius=0.018, linewidth=1.2):
-    patch = FancyBboxPatch(
-        (x, y), w, h,
-        boxstyle=f"round,pad=0.008,rounding_size={radius}",
-        linewidth=linewidth, edgecolor=edge, facecolor=face,
+def arrow(ax, x0, y0, x1, y1, *, color=PURPLE, linewidth=1.25, scale=9):
+    """Draw one short, unobstructed transition arrow."""
+    ax.add_patch(
+        FancyArrowPatch(
+            (x0, y0),
+            (x1, y1),
+            arrowstyle="-|>",
+            mutation_scale=scale,
+            linewidth=linewidth,
+            color=color,
+            shrinkA=0,
+            shrinkB=0,
+        )
     )
-    ax.add_patch(patch)
-    ax.text(x + w / 2, y + h / 2, text, ha="center", va="center",
-            fontsize=size, weight=weight, color=color, linespacing=1.18)
-    return patch
 
 
-def arrow(ax, start, end, *, color=INK, width=1.25, connection="arc3",
-          style="-|>", scale=10):
-    patch = FancyArrowPatch(
-        start, end, arrowstyle=style, mutation_scale=scale, linewidth=width,
-        color=color, connectionstyle=connection, shrinkA=2, shrinkB=2,
+def stage_header(ax, x, panel, title, subtitle):
+    ax.text(x, 0.955, panel, fontsize=10.8, weight="bold", va="top", color=INK)
+    ax.text(
+        x + 0.027,
+        0.955,
+        title,
+        fontsize=10.2,
+        weight="bold",
+        va="top",
+        color=INK,
     )
-    ax.add_patch(patch)
-    return patch
+    ax.text(
+        x + 0.027,
+        0.888,
+        subtitle,
+        fontsize=7.3,
+        va="top",
+        color=MUTED,
+    )
 
 
-fig = plt.figure(figsize=(7.05, 3.55), facecolor="white")
-ax = fig.add_axes((0.02, 0.04, 0.96, 0.94))
+def objective_term(ax, y, color, name, expression):
+    """Use a color key beside the algebra, never behind it."""
+    ax.plot([0.035, 0.035], [y - 0.030, y + 0.030], color=color, linewidth=2.4,
+            solid_capstyle="round")
+    ax.text(0.049, y + 0.021, name, fontsize=6.5, weight="bold", color=color,
+            va="center")
+    ax.text(0.049, y - 0.020, expression, fontsize=8.8, color=INK, va="center")
+
+
+fig = plt.figure(figsize=(7.10, 3.12), facecolor="white")
+ax = fig.add_axes((0.018, 0.035, 0.964, 0.94))
 ax.set_xlim(0, 1)
 ax.set_ylim(0, 1)
 ax.axis("off")
 
-# Panel labels and terse headings do the orienting work; the caption carries prose.
-ax.text(0.00, 0.98, "a", fontsize=11, weight="bold", va="top", color=INK)
-ax.text(0.035, 0.98, "Target $\\rightarrow$ settled neuron state",
-        fontsize=11, weight="bold", va="top", color=INK)
-ax.text(0.61, 0.98, "b", fontsize=11, weight="bold", va="top", color=INK)
-ax.text(0.645, 0.98, "One neuron state $\\rightarrow$ two updates",
-        fontsize=10.7, weight="bold", va="top", color=INK)
+# Three stages, one reading direction. Whitespace—not containers—separates them.
+stage_header(ax, 0.005, "a", "Form a local target", "Three soft-SFA forces")
+stage_header(ax, 0.365, "b", "Define the neuron state", "Residual, then same-layer settling")
+stage_header(ax, 0.700, "c", "Update local synapses", "The settled state supplies both rules")
 
-# Panel a: objective components -> target -> base state -> settled state.
-terms = [
-    (0.03, 0.72, "slow", r"$z_t-p_t$", ORANGE, ORANGE_LIGHT),
-    (0.03, 0.53, "noncollapsed", r"$-[\gamma-v]_+(z_t-m)$", TEAL, TEAL_LIGHT),
-    (0.03, 0.34, "decorrelated", r"$A(z_t-m)$", PURPLE, PURPLE_LIGHT),
-]
-for x, y, name, equation, edge, face in terms:
-    box(ax, x, y, 0.185, 0.13, name + "\n" + equation,
-        edge=edge, face=face, size=8.2, weight="bold")
-    arrow(ax, (x + 0.185, y + 0.065), (0.282, 0.595), color=edge, width=1.15)
+# a. The target is displayed in dependency order. The thin colored strokes are
+# keys, not backgrounds, so none of the mathematical text collides with shapes.
+objective_term(ax, 0.760, ORANGE, "SLOW", r"$\omega_t\,(z_t-p_t)$")
+objective_term(
+    ax,
+    0.650,
+    TEAL,
+    "NONCOLLAPSE",
+    r"$-\frac{\lambda_V}{\lambda_S}\,g\odot(z_t-m)$",
+)
+objective_term(
+    ax,
+    0.540,
+    BLUE,
+    "DECORRELATE",
+    r"$+\frac{\lambda_C}{2\lambda_S}\,A(z_t-m)$",
+)
+ax.plot([0.048, 0.286], [0.460, 0.460], color=HAIRLINE, linewidth=0.9)
+ax.text(0.048, 0.405,
+        r"$r_t=r_t^{\mathrm{slow}}+r_t^{\mathrm{var}}+r_t^{\mathrm{cov}}$",
+        fontsize=8.7, color=INK, va="center")
+ax.text(0.048, 0.325, r"$\hat z_t=\mathrm{sg}(z_t-r_t)$", fontsize=10.2,
+        color=PURPLE, weight="bold", va="center")
 
-box(ax, 0.275, 0.49, 0.14, 0.205,
-    "target\n" + r"$\hat z_t=\mathrm{sg}(z_t-r_t)$",
-    edge=PURPLE, face="white", size=9.1, weight="bold", linewidth=1.45)
-arrow(ax, (0.415, 0.625), (0.445, 0.625), color=PURPLE, width=1.45)
-box(ax, 0.450, 0.555, 0.125, 0.14,
-    "base state\n" + r"$b_t=J_\phi^\top r_t$",
-    edge=PURPLE, face="white", size=8.5, weight="bold", linewidth=1.4)
-box(ax, 0.450, 0.34, 0.125, 0.14,
-    "settled state\n" + r"$s_t\approx(I+\kappa M)^{-1}b_t$",
-    edge=PURPLE, face=PURPLE_LIGHT, size=7.6, weight="bold", linewidth=1.55)
-arrow(ax, (0.512, 0.555), (0.512, 0.48), color=PURPLE, width=1.35)
-ax.text(0.535, 0.515, "inhibit", ha="left", va="center", fontsize=7.4,
-        color=PURPLE, weight="bold")
-ax.text(0.345, 0.445, r"$r_t=z_t-\hat z_t$", ha="center", fontsize=8.7,
-        color=MUTED)
+# Dedicated gutters carry stage transitions; arrows never traverse text.
+arrow(ax, 0.315, 0.575, 0.350, 0.575)
 
-# Panel b: the same postsynaptic state meets pre-synaptic or lateral state.
-cx, cy = 0.76, 0.60
-ax.add_patch(Circle((cx, cy), 0.080, facecolor=PURPLE_LIGHT,
-                    edgecolor=PURPLE, linewidth=1.6))
-ax.text(cx, cy + 0.015, "neuron $j$", ha="center", va="center",
-        fontsize=9.3, weight="bold", color=INK)
-ax.text(cx, cy - 0.030, r"state $s_{t,j}$", ha="center", va="center",
-        fontsize=9.0, weight="bold", color=PURPLE)
+# b. First map the activation residual to the neuron's preactivation. Then let
+# only neurons in the same layer settle that state through M.
+ax.text(0.392, 0.745, "activation residual", fontsize=6.8, weight="bold",
+        color=MUTED, va="center")
+ax.text(0.392, 0.690, r"$z_t-\hat z_t$", fontsize=10.2, color=INK, va="center")
+arrow(ax, 0.435, 0.640, 0.435, 0.575, color=MUTED, linewidth=1.0, scale=8)
+ax.text(0.451, 0.606, r"$J_{\phi,t}^{\mathsf{T}}$", fontsize=7.8, color=MUTED,
+        va="center")
+ax.text(0.392, 0.525, "base neuron state", fontsize=6.8, weight="bold",
+        color=MUTED, va="center")
+ax.text(0.392, 0.470, r"$b_t=J_{\phi,t}^{\mathsf{T}}(z_t-\hat z_t)$",
+        fontsize=9.6, color=INK, va="center")
 
-ax.add_patch(Circle((0.635, 0.60), 0.042, facecolor="white",
-                    edgecolor=INK, linewidth=1.1))
-ax.text(0.635, 0.60, r"$x_{t,i}$", ha="center", va="center", fontsize=8.7)
-arrow(ax, (0.677, 0.60), (0.680, 0.60), color=INK, width=1.25)
-ax.plot([0.677, 0.681], [0.60, 0.60], color=INK, linewidth=1.25)
-ax.text(0.675, 0.675, r"$W_{ji}$", ha="center", fontsize=8.2, color=MUTED)
-
-ax.add_patch(Circle((0.905, 0.60), 0.050, facecolor="white",
-                    edgecolor=TEAL, linewidth=1.2))
-ax.text(0.905, 0.60, r"$s_{t,k}$", ha="center", va="center",
-        fontsize=8.7, color=TEAL, weight="bold")
-arrow(ax, (0.855, 0.60), (0.840, 0.60), color=TEAL, width=1.35)
-ax.text(0.858, 0.647, r"$L^{\rm lat}_{jk}<0$", ha="center", fontsize=7.0,
-        color=TEAL)
-
-box(ax, 0.615, 0.30, 0.19, 0.12,
-    "feedforward\n" + r"$\Delta W_{ji}\propto-s_{t,j}x_{t,i}$",
-    edge=PURPLE, face="white", size=8.5, weight="bold")
-box(ax, 0.815, 0.30, 0.17, 0.12,
-    "anti-Hebbian\n" + r"$\Delta L^{\rm lat}_{jk}=-\eta_Ms_{t,j}s_{t,k}$",
-    edge=TEAL, face=TEAL_LIGHT, size=7.1, weight="bold")
-arrow(ax, (0.735, 0.52), (0.71, 0.42), color=PURPLE, width=1.2)
-arrow(ax, (0.805, 0.53), (0.885, 0.42), color=TEAL, width=1.2)
-
-# Lower strip: locality in time and depth, without a second explanatory diagram.
-ax.plot([0.015, 0.985], [0.235, 0.235], color="#D8D8DE", linewidth=0.8)
-ax.text(0.00, 0.19, "c", fontsize=11, weight="bold", va="top", color=INK)
-ax.text(0.035, 0.19, "Local in space and time", fontsize=10.5,
-        weight="bold", va="top", color=INK)
-
-timeline_y = 0.08
-for x, label in [(0.34, r"$t-1$"), (0.46, r"$t$"), (0.58, r"$t+1$")]:
-    ax.add_patch(Circle((x, timeline_y), 0.023, facecolor=PALE,
-                        edgecolor=MID, linewidth=1.0))
-    ax.text(x, timeline_y - 0.055, label, ha="center", fontsize=8.0,
-            color=MUTED)
-arrow(ax, (0.363, timeline_y), (0.437, timeline_y), color=MID, width=1.0)
-arrow(ax, (0.483, timeline_y), (0.557, timeline_y), color=MID, width=1.0)
-ax.plot([0.40, 0.40], [0.035, 0.145], color=PURPLE, linewidth=2.4,
+# A separate, quiet settling motif: b enters from the left, same-layer coupling
+# acts along the center line, and s leaves on the right.
+ax.text(0.392, 0.352, r"$b_t$", fontsize=9.8, color=INK, va="center")
+ax.plot([0.425, 0.565], [0.352, 0.352], color=LIGHT_PURPLE, linewidth=4.4,
         solid_capstyle="round")
-ax.text(0.40, 0.16, "detach", ha="center", fontsize=7.8,
-        color=PURPLE, weight="bold")
-ax.text(0.76, 0.105, "fixed detached state; no temporal graph",
-        ha="center", fontsize=8.2, color=INK)
-ax.text(0.76, 0.050, "no error crosses a layer boundary",
-        ha="center", fontsize=8.2, color=INK)
+arrow(ax, 0.425, 0.352, 0.565, 0.352, linewidth=1.15, scale=8)
+ax.text(0.495, 0.391, "same-layer inhibition", fontsize=6.8, color=PURPLE,
+        ha="center", va="center")
+ax.text(0.579, 0.352, r"$s_t$", fontsize=10.0, color=PURPLE, weight="bold",
+        va="center")
+ax.text(0.392, 0.275, r"$(I+\kappa M)s_t\approx b_t$", fontsize=9.1,
+        color=INK, va="center")
+
+arrow(ax, 0.655, 0.575, 0.690, 0.575)
+
+# c. A typographic fork makes the shared-state claim visible without placing
+# equations inside boxes or running connectors through their labels.
+ax.text(0.725, 0.715, r"$s_{t,j}$", fontsize=12.0, weight="bold", color=PURPLE,
+        ha="center", va="center")
+ax.plot([0.749, 0.773], [0.715, 0.715], color=PURPLE, linewidth=1.25)
+ax.plot([0.773, 0.773], [0.535, 0.715], color=PURPLE, linewidth=1.25)
+ax.plot([0.773, 0.795], [0.655, 0.655], color=PURPLE, linewidth=1.25)
+ax.plot([0.773, 0.795], [0.535, 0.535], color=PURPLE, linewidth=1.25)
+
+ax.text(0.805, 0.690, "FEEDFORWARD GRADIENT", fontsize=6.5, weight="bold",
+        color=PURPLE, va="center")
+ax.text(0.805, 0.640, r"$\nabla_{W_{ji}}\widetilde L_a\propto s_{t,j}x_{t,i}$",
+        fontsize=9.1, color=INK, va="center")
+ax.text(0.805, 0.570, "LATERAL CHANGE", fontsize=6.5, weight="bold",
+        color=TEAL, va="center")
+ax.text(0.805, 0.520,
+        r"$\Delta L^{\mathrm{lat}}_{jk}\propto-s_{t,j}s_{t,k}$",
+        fontsize=8.8, color=INK, va="center")
+ax.text(0.725, 0.353, r"$x_{t,i}$", fontsize=9.5, color=INK, va="center")
+ax.plot([0.767, 0.935], [0.352, 0.352], color=HAIRLINE, linewidth=1.0)
+arrow(ax, 0.767, 0.352, 0.935, 0.352, color=MUTED, linewidth=0.9, scale=7)
+ax.text(0.851, 0.397, r"$W_{ji}$", fontsize=7.7, color=MUTED, ha="center",
+        va="center")
+ax.text(0.955, 0.352, r"$s_{t,j}$", fontsize=9.5, color=PURPLE, ha="right",
+        va="center")
+
+# The locality claim is a boundary statement, not another flowchart. A single
+# rule cleanly separates it from the mechanism above.
+ax.plot([0.005, 0.995], [0.205, 0.205], color=HAIRLINE, linewidth=0.9)
+ax.text(0.020, 0.153, "LOCAL IN TIME", fontsize=6.7, weight="bold",
+        color=PURPLE, va="center")
+ax.text(0.020, 0.103, r"one detached predecessor $p_t$; no graph through time",
+        fontsize=7.3, color=INK, va="center")
+ax.plot([0.500, 0.500], [0.080, 0.175], color=HAIRLINE, linewidth=0.8)
+ax.text(0.525, 0.153, "LOCAL IN SPACE", fontsize=6.7, weight="bold",
+        color=PURPLE, va="center")
+ax.text(0.525, 0.103, "updates read endpoint states; no error crosses layers",
+        fontsize=7.3, color=INK, va="center")
 
 source_directory = Path(__file__).resolve().parent
 fixed_pdf_time = datetime(2026, 8, 9, tzinfo=timezone.utc)
 fig.savefig(
     source_directory / "terel-method-overview.pdf",
     bbox_inches="tight",
+    pad_inches=0.01,
     metadata={"CreationDate": fixed_pdf_time, "ModDate": fixed_pdf_time},
 )
 fig.savefig(
     source_directory / "terel-method-overview.png",
     dpi=300,
     bbox_inches="tight",
+    pad_inches=0.01,
     facecolor="white",
 )
 plt.close(fig)
