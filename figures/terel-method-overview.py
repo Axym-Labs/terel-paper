@@ -1,11 +1,11 @@
-"""Render the TeReL locality schematic used as Figure 1."""
+"""Render the reader-first TeReL-S mechanism schematic used as Figure 1."""
 
 from datetime import datetime, timezone
 import logging
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch, Circle
 
 
 logging.getLogger("fontTools.ttLib.tables._h_e_a_d").setLevel(logging.ERROR)
@@ -18,288 +18,140 @@ plt.rcParams.update(
     }
 )
 
-
-BLUE = "#315DA8"
-BLUE_LIGHT = "#EAF0FA"
-INK = "#20242D"
-MUTED = "#5C6370"
-ORANGE = "#C65D16"
-ORANGE_LIGHT = "#FFF0E5"
-TEAL = "#177E70"
-TEAL_LIGHT = "#E5F5F2"
-RED = "#B23A48"
-RED_LIGHT = "#FBEAEC"
-GREY = "#F3F4F6"
-MID_GREY = "#A8ADB7"
+PURPLE = "#3F21B6"
+PURPLE_LIGHT = "#EEEAFB"
+ORANGE = "#B95A16"
+ORANGE_LIGHT = "#FFF0E4"
+TEAL = "#14786B"
+TEAL_LIGHT = "#E5F4F1"
+INK = "#202127"
+MUTED = "#62636B"
+MID = "#AAAAB2"
+PALE = "#F5F5F7"
 
 
-def rounded_box(
-    ax,
-    xy,
-    width,
-    height,
-    text,
-    *,
-    face="white",
-    edge=INK,
-    size=9.2,
-    weight="normal",
-    text_color=INK,
-    radius=0.018,
-    linewidth=1.15,
-):
+def box(ax, x, y, w, h, text, *, edge=PURPLE, face="white", size=9.0,
+        weight="normal", color=INK, radius=0.018, linewidth=1.2):
     patch = FancyBboxPatch(
-        xy,
-        width,
-        height,
-        boxstyle=f"round,pad=0.010,rounding_size={radius}",
-        linewidth=linewidth,
-        facecolor=face,
-        edgecolor=edge,
+        (x, y), w, h,
+        boxstyle=f"round,pad=0.008,rounding_size={radius}",
+        linewidth=linewidth, edgecolor=edge, facecolor=face,
     )
     ax.add_patch(patch)
-    ax.text(
-        xy[0] + width / 2,
-        xy[1] + height / 2,
-        text,
-        ha="center",
-        va="center",
-        fontsize=size,
-        color=text_color,
-        weight=weight,
-        linespacing=1.25,
-    )
+    ax.text(x + w / 2, y + h / 2, text, ha="center", va="center",
+            fontsize=size, weight=weight, color=color, linespacing=1.18)
     return patch
 
 
-def arrow(
-    ax,
-    start,
-    end,
-    *,
-    color=INK,
-    width=1.25,
-    style="-|>",
-    connection="arc3",
-    mutation_scale=10,
-):
+def arrow(ax, start, end, *, color=INK, width=1.25, connection="arc3",
+          style="-|>", scale=10):
     patch = FancyArrowPatch(
-        start,
-        end,
-        arrowstyle=style,
-        mutation_scale=mutation_scale,
-        linewidth=width,
-        color=color,
-        connectionstyle=connection,
-        shrinkA=2,
-        shrinkB=2,
+        start, end, arrowstyle=style, mutation_scale=scale, linewidth=width,
+        color=color, connectionstyle=connection, shrinkA=2, shrinkB=2,
     )
     ax.add_patch(patch)
     return patch
 
 
-fig, axes = plt.subplots(
-    2,
-    1,
-    figsize=(7.05, 4.75),
-    gridspec_kw={"height_ratios": [1.55, 0.85]},
-)
-fig.patch.set_facecolor("white")
-
-# Panel A: the information path for one feedforward weight update.
-ax = axes[0]
+fig = plt.figure(figsize=(7.05, 3.55), facecolor="white")
+ax = fig.add_axes((0.02, 0.04, 0.96, 0.94))
 ax.set_xlim(0, 1)
 ax.set_ylim(0, 1)
 ax.axis("off")
-ax.text(
-    0.0,
-    0.98,
-    "A  Information available to one feedforward weight update",
-    fontsize=12.5,
-    weight="bold",
-    color=INK,
-    va="top",
-)
-ax.text(
-    0.0,
-    0.905,
-    "Signals may arrive from the same layer, but no error arrives from a later layer.",
-    fontsize=9.1,
-    color=MUTED,
-    va="top",
-)
 
-# Feedforward path and explicit depth boundary.
-rounded_box(
-    ax,
-    (0.015, 0.57),
-    0.17,
-    0.13,
-    "presynaptic\nactivity\n" + r"$z^{\ell-1}_{t,i}$",
-    face="white",
-    edge=BLUE,
-    size=9.0,
-    weight="bold",
-)
-rounded_box(
-    ax,
-    (0.27, 0.555),
-    0.20,
-    0.18,
-    "postsynaptic\nneuron " + r"$j$" + "\n" + r"$z^\ell_{t,j}$",
-    face=BLUE_LIGHT,
-    edge=BLUE,
-    size=9.0,
-    weight="bold",
-)
-rounded_box(
-    ax,
-    (0.82, 0.57),
-    0.17,
-    0.13,
-    "later layer\n" + r"$\ell+1$",
-    face=GREY,
-    edge=MID_GREY,
-    size=9.0,
-    text_color=MUTED,
-)
-arrow(ax, (0.185, 0.635), (0.27, 0.635), color=BLUE)
-ax.text(0.227, 0.67, r"$W^\ell_{ji}$", ha="center", va="bottom", fontsize=9.0, color=BLUE, weight="bold")
-arrow(ax, (0.47, 0.635), (0.715, 0.635), color=BLUE)
-arrow(ax, (0.735, 0.635), (0.82, 0.635), color=MID_GREY)
-ax.plot([0.725, 0.725], [0.54, 0.73], color=RED, linewidth=3.0, solid_capstyle="round")
-ax.text(
-    0.725,
-    0.755,
-    "no downstream error",
-    ha="center",
-    va="bottom",
-    color=RED,
-    fontsize=8.5,
-    weight="bold",
-)
+# Panel labels and terse headings do the orienting work; the caption carries prose.
+ax.text(0.00, 0.98, "a", fontsize=11, weight="bold", va="top", color=INK)
+ax.text(0.035, 0.98, "Target $\\rightarrow$ settled neuron state",
+        fontsize=11, weight="bold", va="top", color=INK)
+ax.text(0.61, 0.98, "b", fontsize=11, weight="bold", va="top", color=INK)
+ax.text(0.645, 0.98, "One neuron state $\\rightarrow$ two updates",
+        fontsize=10.7, weight="bold", va="top", color=INK)
 
-# The three local contributions remain visually separate and converge on e_tj.
-signal_y = 0.185
-signal_h = 0.14
-rounded_box(
-    ax,
-    (0.015, signal_y),
-    0.285,
-    signal_h,
-    "temporal coherence\n" + r"$z^\ell_{t,j}-p^\ell_{t,j}$",
-    face=ORANGE_LIGHT,
-    edge=ORANGE,
-    size=9.0,
-    weight="bold",
-)
-rounded_box(
-    ax,
-    (0.355, signal_y),
-    0.29,
-    signal_h,
-    "variance expansion\n" + r"$[\gamma-v^\ell_j]_+(z^\ell_{t,j}-m^\ell_j)$",
-    face=TEAL_LIGHT,
-    edge=TEAL,
-    size=8.7,
-    weight="bold",
-)
-rounded_box(
-    ax,
-    (0.70, signal_y),
-    0.285,
-    signal_h,
-    "lateral decorrelation\n" + r"$\sum_{k\ne j}A^\ell_{jk}q^\ell_{t,k}$",
-    face=RED_LIGHT,
-    edge=RED,
-    size=8.8,
-    weight="bold",
-)
-rounded_box(
-    ax,
-    (0.42, 0.40),
-    0.26,
-    0.105,
-    "postsynaptic factor  " + r"$e^\ell_{t,j}$",
-    face="white",
-    edge=INK,
-    size=9.1,
-    weight="bold",
-)
-arrow(ax, (0.1575, signal_y + signal_h), (0.47, 0.40), color=ORANGE)
-arrow(ax, (0.50, signal_y + signal_h), (0.55, 0.40), color=TEAL)
-arrow(ax, (0.8425, signal_y + signal_h), (0.63, 0.40), color=RED)
-arrow(
-    ax,
-    (0.42, 0.4525),
-    (0.37, 0.555),
-    color=BLUE,
-    style="-|>",
-    mutation_scale=9,
-)
+# Panel a: objective components -> target -> base state -> settled state.
+terms = [
+    (0.03, 0.72, "slow", r"$z_t-p_t$", ORANGE, ORANGE_LIGHT),
+    (0.03, 0.53, "noncollapsed", r"$-[\gamma-v]_+(z_t-m)$", TEAL, TEAL_LIGHT),
+    (0.03, 0.34, "decorrelated", r"$A(z_t-m)$", PURPLE, PURPLE_LIGHT),
+]
+for x, y, name, equation, edge, face in terms:
+    box(ax, x, y, 0.185, 0.13, name + "\n" + equation,
+        edge=edge, face=face, size=8.2, weight="bold")
+    arrow(ax, (x + 0.185, y + 0.065), (0.282, 0.595), color=edge, width=1.15)
 
-ax.text(
-    0.50,
-    0.055,
-    r"Identity normalization:  "
-    r"$\Delta W^\ell_{ji}\propto-\sum_t e^\ell_{t,j}\,\phi'(a^\ell_{t,j})\,z^{\ell-1}_{t,i}$",
-    ha="center",
-    va="center",
-    fontsize=9.5,
-    color=INK,
-    bbox={"boxstyle": "round,pad=0.35", "facecolor": "white", "edgecolor": MID_GREY},
-)
+box(ax, 0.275, 0.49, 0.14, 0.205,
+    "target\n" + r"$\hat z_t=\mathrm{sg}(z_t-r_t)$",
+    edge=PURPLE, face="white", size=9.1, weight="bold", linewidth=1.45)
+arrow(ax, (0.415, 0.625), (0.445, 0.625), color=PURPLE, width=1.45)
+box(ax, 0.450, 0.555, 0.125, 0.14,
+    "base state\n" + r"$b_t=J_\phi^\top r_t$",
+    edge=PURPLE, face="white", size=8.5, weight="bold", linewidth=1.4)
+box(ax, 0.450, 0.34, 0.125, 0.14,
+    "settled state\n" + r"$s_t\approx(I+\kappa M)^{-1}b_t$",
+    edge=PURPLE, face=PURPLE_LIGHT, size=7.6, weight="bold", linewidth=1.55)
+arrow(ax, (0.512, 0.555), (0.512, 0.48), color=PURPLE, width=1.35)
+ax.text(0.535, 0.515, "inhibit", ha="left", va="center", fontsize=7.4,
+        color=PURPLE, weight="bold")
+ax.text(0.345, 0.445, r"$r_t=z_t-\hat z_t$", ha="center", fontsize=8.7,
+        color=MUTED)
 
-# Panel B: spatial locality is shared; the temporal reference differs.
-ax = axes[1]
-ax.set_xlim(0, 1)
-ax.set_ylim(0, 1)
-ax.axis("off")
-ax.text(
-    0.0,
-    0.97,
-    "B  The temporal distinction between the variants",
-    fontsize=12.5,
-    weight="bold",
-    color=INK,
-    va="top",
-)
+# Panel b: the same postsynaptic state meets pre-synaptic or lateral state.
+cx, cy = 0.76, 0.60
+ax.add_patch(Circle((cx, cy), 0.080, facecolor=PURPLE_LIGHT,
+                    edgecolor=PURPLE, linewidth=1.6))
+ax.text(cx, cy + 0.015, "neuron $j$", ha="center", va="center",
+        fontsize=9.3, weight="bold", color=INK)
+ax.text(cx, cy - 0.030, r"state $s_{t,j}$", ha="center", va="center",
+        fontsize=9.0, weight="bold", color=PURPLE)
 
-# Column guides.
-ax.text(0.18, 0.79, "temporal reference", fontsize=8.4, color=MUTED, ha="center", weight="bold")
-ax.text(0.51, 0.79, "gradient through time", fontsize=8.4, color=MUTED, ha="center", weight="bold")
-ax.text(0.84, 0.79, "execution consequence", fontsize=8.4, color=MUTED, ha="center", weight="bold")
+ax.add_patch(Circle((0.635, 0.60), 0.042, facecolor="white",
+                    edgecolor=INK, linewidth=1.1))
+ax.text(0.635, 0.60, r"$x_{t,i}$", ha="center", va="center", fontsize=8.7)
+arrow(ax, (0.677, 0.60), (0.680, 0.60), color=INK, width=1.25)
+ax.plot([0.677, 0.681], [0.60, 0.60], color=INK, linewidth=1.25)
+ax.text(0.675, 0.675, r"$W_{ji}$", ha="center", fontsize=8.2, color=MUTED)
 
-row_specs = (
-    (
-        0.49,
-        "canonical TeReL",
-        "$p_t=z_{t-1}$ in the chunk",
-        "retained across\nadjacent samples",
-        "short chunk graph\nmust be retained",
-        ORANGE,
-        ORANGE_LIGHT,
-    ),
-    (
-        0.16,
-        "TeReL-S",
-        "$p_t=\\mathrm{sg}(z_{t-1})$",
-        "stopped at the\nstored reference",
-        "fixed temporal state;\nno time graph",
-        TEAL,
-        TEAL_LIGHT,
-    ),
-)
-for y, label, reference, gradient, consequence, edge, face in row_specs:
-    rounded_box(ax, (0.005, y), 0.16, 0.19, label, face=face, edge=edge, size=8.9, weight="bold")
-    rounded_box(ax, (0.195, y), 0.25, 0.19, reference, face="white", edge=edge, size=8.8)
-    rounded_box(ax, (0.475, y), 0.26, 0.19, gradient, face="white", edge=edge, size=8.7)
-    rounded_box(ax, (0.765, y), 0.225, 0.19, consequence, face=face, edge=edge, size=8.5, weight="bold")
+ax.add_patch(Circle((0.905, 0.60), 0.050, facecolor="white",
+                    edgecolor=TEAL, linewidth=1.2))
+ax.text(0.905, 0.60, r"$s_{t,k}$", ha="center", va="center",
+        fontsize=8.7, color=TEAL, weight="bold")
+arrow(ax, (0.855, 0.60), (0.840, 0.60), color=TEAL, width=1.35)
+ax.text(0.858, 0.647, r"$L^{\rm lat}_{jk}<0$", ha="center", fontsize=7.0,
+        color=TEAL)
 
-plt.subplots_adjust(left=0.025, right=0.985, top=0.985, bottom=0.035, hspace=0.10)
+box(ax, 0.615, 0.30, 0.19, 0.12,
+    "feedforward\n" + r"$\Delta W_{ji}\propto-s_{t,j}x_{t,i}$",
+    edge=PURPLE, face="white", size=8.5, weight="bold")
+box(ax, 0.815, 0.30, 0.17, 0.12,
+    "anti-Hebbian\n" + r"$\Delta L^{\rm lat}_{jk}=-\eta_Ms_{t,j}s_{t,k}$",
+    edge=TEAL, face=TEAL_LIGHT, size=7.1, weight="bold")
+arrow(ax, (0.735, 0.52), (0.71, 0.42), color=PURPLE, width=1.2)
+arrow(ax, (0.805, 0.53), (0.885, 0.42), color=TEAL, width=1.2)
+
+# Lower strip: locality in time and depth, without a second explanatory diagram.
+ax.plot([0.015, 0.985], [0.235, 0.235], color="#D8D8DE", linewidth=0.8)
+ax.text(0.00, 0.19, "c", fontsize=11, weight="bold", va="top", color=INK)
+ax.text(0.035, 0.19, "Local in space and time", fontsize=10.5,
+        weight="bold", va="top", color=INK)
+
+timeline_y = 0.08
+for x, label in [(0.34, r"$t-1$"), (0.46, r"$t$"), (0.58, r"$t+1$")]:
+    ax.add_patch(Circle((x, timeline_y), 0.023, facecolor=PALE,
+                        edgecolor=MID, linewidth=1.0))
+    ax.text(x, timeline_y - 0.055, label, ha="center", fontsize=8.0,
+            color=MUTED)
+arrow(ax, (0.363, timeline_y), (0.437, timeline_y), color=MID, width=1.0)
+arrow(ax, (0.483, timeline_y), (0.557, timeline_y), color=MID, width=1.0)
+ax.plot([0.40, 0.40], [0.035, 0.145], color=PURPLE, linewidth=2.4,
+        solid_capstyle="round")
+ax.text(0.40, 0.16, "detach", ha="center", fontsize=7.8,
+        color=PURPLE, weight="bold")
+ax.text(0.76, 0.105, "fixed detached state; no temporal graph",
+        ha="center", fontsize=8.2, color=INK)
+ax.text(0.76, 0.050, "no error crosses a layer boundary",
+        ha="center", fontsize=8.2, color=INK)
 
 source_directory = Path(__file__).resolve().parent
-fixed_pdf_time = datetime(2026, 8, 3, tzinfo=timezone.utc)
+fixed_pdf_time = datetime(2026, 8, 9, tzinfo=timezone.utc)
 fig.savefig(
     source_directory / "terel-method-overview.pdf",
     bbox_inches="tight",
@@ -307,7 +159,8 @@ fig.savefig(
 )
 fig.savefig(
     source_directory / "terel-method-overview.png",
-    dpi=240,
+    dpi=300,
     bbox_inches="tight",
+    facecolor="white",
 )
 plt.close(fig)

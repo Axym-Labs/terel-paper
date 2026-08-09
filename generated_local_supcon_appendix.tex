@@ -1,8 +1,11 @@
 \begin{table}[H]
 \centering
-\small
-\caption{Local SupCon validation grid across three seeds. Bold marks the configuration selected before test evaluation.}
-\label{tab:local-supcon-validation}
+\footnotesize
+\caption{Local SupCon selection and final record. The left block reports the validation grid; bold marks the configuration selected before final evaluation. The right block reports the resource state of that configuration.}
+\label{tab:local-supcon-record}
+\begin{minipage}[t]{0.48\linewidth}
+\centering
+\textbf{Validation selection}\par\smallskip
 \begin{tabular}{rrc}
 \toprule
 Learning rate & Temperature & Accuracy \\
@@ -15,18 +18,15 @@ Learning rate & Temperature & Accuracy \\
 1e-03 & 0.2 & 96.20 $\pm$ 0.02 \\
 \bottomrule
 \end{tabular}
-\end{table}
-
-\begin{table}[H]
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\linewidth}
 \centering
-\small
-\caption{Local SupCon test values and resource state across five seeds. Inference retains the encoder parameters and BatchNorm buffers; optimizer state is used only during training.}
-\label{tab:local-supcon-raw}
+\textbf{Final record}\par\smallskip
 \begin{tabular}{lc}
 \toprule
 Quantity & Value \\
 \midrule
-Test accuracy by seed (\%) & 96.97, 97.12, 96.99, 96.98, 96.83 \\
+Mean accuracy (\%) & 96.98 $\pm$ 0.10 \\
 Mean encoder seconds & 82.1 \\
 Model parameters (MiB) & 2.040 \\
 Optimizer state (MiB) & 4.080 \\
@@ -34,4 +34,7 @@ Normalization buffers (MiB) & 0.006 \\
 Inference encoder (MiB) & 2.046 \\
 \bottomrule
 \end{tabular}
+\end{minipage}
+\par\smallskip
+Final accuracies (\%): 96.97, 97.12, 96.99, 96.98, 96.83.
 \end{table}

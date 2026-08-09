@@ -1,0 +1,29 @@
+\begin{table}[H]
+\centering
+\small
+\caption{Raw final-run values for residual-state TeReL-S. Accuracy is in percent.}
+\label{tab:residual-state-raw}
+\begin{tabular}{ll}
+\toprule
+Field & Values \\
+\midrule
+Seeds & 42, 43, 44, 45, 46 \\
+Accuracy & 95.20, 95.53, 95.61, 95.70, 95.48 \\
+Effective rank & 81.89, 82.33, 82.03, 81.85, 81.55 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Training resources for residual-state TeReL-S. The CPU time is mean $\pm$ sample standard deviation across final runs.}
+\label{tab:residual-state-resources}
+\begin{tabular}{rrrrr}
+\toprule
+Updates & Dynamic scalars & Parameters (MiB) & Optimizer (MiB) & CPU seconds \\
+\midrule
+100,000 & 658,434 & 2.034 & 4.068 & 571.1 $\pm$ 58.5 \\
+\bottomrule
+\end{tabular}
+\end{table}

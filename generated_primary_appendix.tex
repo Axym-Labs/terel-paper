@@ -7,9 +7,8 @@
 \toprule
 Method & Raw values \\
 \midrule
-\TeReL{} (all layers) & 97.30, 97.30, 97.21, 97.28, 97.41 \\
-\TeReL{} (last layer) & 97.14, 97.18, 97.28, 97.09, 97.01 \\
-\TeReL{}-S (all layers) & 96.35, 96.34, 96.32, 96.17, 96.26 \\
+\TeReLBatched{} (all layers) & 97.30, 97.30, 97.21, 97.28, 97.41 \\
+\TeReLBatched{} (last layer) & 97.14, 97.18, 97.28, 97.09, 97.01 \\
 Random, no normalization (all layers) & 94.66, 95.27, 95.12, 95.33, 95.27 \\
 Backpropagation (all layers) & 98.32, 98.32, 98.30, 98.28, 98.47 \\
 \bottomrule
@@ -25,9 +24,8 @@ Backpropagation (all layers) & 98.32, 98.32, 98.30, 98.28, 98.47 \\
 \toprule
 Method & Examples (M) & Opt. steps & Seconds & Peak MiB & MAC (G) \\
 \midrule
-\TeReL{} (all layers) & 3.00 & 11760 & 107.6 & 76.7 & 3981.3 \\
-\TeReL{} (last layer) & 3.00 & 11760 & 107.7 & 76.7 & 3981.3 \\
-\TeReL{}-S (all layers) & 0.50 & 1960 & 27.4 & 77.7 & 1126.4 \\
+\TeReLBatched{} (all layers) & 3.00 & 11760 & 107.6 & 76.7 & 3981.3 \\
+\TeReLBatched{} (last layer) & 3.00 & 11760 & 107.7 & 76.7 & 3981.3 \\
 Random, no normalization (all layers) & 0.00 & 0 & 0.0 & 0.0 & 0.0 \\
 Backpropagation (all layers) & 3.00 & 11760 & 43.4 & 225.4 & 4815.4 \\
 \bottomrule
@@ -44,24 +42,10 @@ Backpropagation (all layers) & 3.00 & 11760 & 43.4 & 225.4 & 4815.4 \\
 \toprule
 Method & Model params & Optimizer & Algorithm & Norm. & Inference encoder \\
 \midrule
-\TeReL{} (all layers) & 2.040 & 4.080 & 1.262 & 0.006 & 2.046 \\
-\TeReL{} (last layer) & 2.040 & 4.080 & 1.262 & 0.006 & 2.046 \\
-\TeReL{}-S (all layers) & 2.034 & 4.068 & 1.262 & 0.000 & 2.034 \\
+\TeReLBatched{} (all layers) & 2.040 & 4.080 & 1.262 & 0.006 & 2.046 \\
+\TeReLBatched{} (last layer) & 2.040 & 4.080 & 1.262 & 0.006 & 2.046 \\
 Random, no normalization (all layers) & 2.034 & 0.000 & 0.000 & 0.000 & 2.034 \\
 Backpropagation (all layers) & 2.050 & 4.100 & 0.000 & 0.006 & 2.046 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{table}[H]
-\centering
-\caption{Samplewise \TeReL{}-S on the validation split across three seeds. The serial run provides the time and memory measurements; timings from concurrent repetitions are excluded.}
-\label{tab:samplewise-streaming}
-\begin{tabular}{lccc}
-\toprule
-Accuracy (\%) & Effective rank & Median variance & Encoder seconds \\
-\midrule
-95.14 $\pm$ 0.04 & 112.8 & 0.378 & 1305.2 \\
 \bottomrule
 \end{tabular}
 \end{table}
