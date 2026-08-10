@@ -124,8 +124,9 @@ The paper makes four contributions:
   \item We evaluate the samplewise rule, a batched relaxation, Local SupCon,
   direct covariance, and the objective mechanisms under one controlled MNIST
   construction, with selection separated from final evaluation.
-  \item We distinguish the controlled result from the unresolved question of
-  learning from natural temporal order.
+  \item We test chronology against within-stream shuffling on three sensor
+  streams; the development results do not support extending the controlled
+  result to natural order.
 \end{enumerate}
 
 \section{Temporal Regularized Learning}\label{sec:method}
@@ -404,7 +405,9 @@ storage of the nearest methods in a common table.
 The experiments ask three questions.  Does samplewise \TeReL{} learn a useful,
 noncollapsed representation?  Does the residual-state mechanism improve the
 same samplewise rule without inhibition?  How does the batched relaxation
-compare with local and end-to-end baselines?
+compare with local and end-to-end baselines?  A separate development diagnostic
+tests whether chronology, rather than procedural streaming alone, helps on
+participant-recorded sensor sequences.
 
 \subsection{Data splits and roles}
 
@@ -415,6 +418,26 @@ held-out split.  At each encoder epoch, training examples are randomly arranged
 into same-class chunks of length 16, with a boundary at every chunk start.
 Labels determine this order but never enter a \TeReL{} objective.  The protocol
 isolates a task-aligned temporal signal and is not unlabeled self-supervision.
+
+\paragraph{Natural-stream diagnostic.}
+We visualize neuron dynamics on CAPTURE-24, which records roughly 24 hours of
+wrist acceleration from each participant during daily life
+~\cite{chan2024capture24}.  Each consecutive 10-second interval is summarized
+by the mean, standard deviation, minimum, and maximum of the three axes and
+their magnitude.  The trace comprises 128 windows from one uninterrupted
+fitting segment; both the segment and four second-layer neurons were fixed
+before their values were inspected.  It illustrates online dynamics rather
+than improved recognition from natural order.  Development-only order controls
+on CAPTURE-24 and two complementary sensor streams appear in
+\cref{tab:natural-order-development}.
+
+All three sensor experiments use a $D_{\mathrm{in}}\rightarrow128\rightarrow64$
+encoder, identity normalization, two stream presentations, and one
+lateral pass.  Plain SGD uses learning rate $5\times10^{-6}$,
+$(\lambda_S,\lambda_V,\lambda_C)=(4,2.5,1)$, and $\kappa=0.1$.  Labels are
+withheld from encoder training and used only by the common linear readout.  The
+sensor setting was fixed from unlabeled target-term scales before any probe
+result from the comparison was read.
 
 \subsection{Models, baselines, and readouts}
 
@@ -507,26 +530,27 @@ gain does not come from a lower-dimensional collapse.
 In the final runs, the inhibitory pass reduces the root-mean-square neuron
 state from 0.585 to 0.495 in the first layer and from 0.675 to 0.490 in the
 second.  The effect is systematic across
-runs and is largest in the deeper layer.  \Cref{fig:residual-state-behavior}
-shows this correction together with its matched performance effect.  The
-residual state is an active part of
-the learned dynamics, not a relabeling of the exact gradient.
+runs and is largest in the deeper layer.  The residual state is therefore an
+active part of the learned dynamics, not a relabeling of the exact gradient.
+
+\Cref{fig:neuron-state-dynamics} shows the state itself on a chronological
+CAPTURE-24 segment.  The four randomly selected neurons share the same input
+interval but respond with different signs, amplitudes, and marginal
+distributions.  This is the quantity paired with presynaptic activity in the
+feedforward update and with another neuron state in the lateral update.
 
 \begin{figure}[H]
   \centering
-  \IfFileExists{figures/residual-state-behavior.pdf}{%
-    \includegraphics[width=\linewidth]{figures/residual-state-behavior.pdf}%
-  }{\fbox{\parbox{0.92\linewidth}{Residual-state behavior figure generated
-  from the frozen evaluation records and matched diagnostic run.}}}
-  \caption{Effect of residual-state inhibition.  \textbf{a}, One lateral pass
-  improves each matched validation run over the otherwise identical
-  no-inhibition rule; horizontal bars show means.  \textbf{b}, The same pass
-  reduces the population RMS of the neuron state in both layers of every final
-  run.}
-  \label{fig:residual-state-behavior}
+  \includegraphics[width=\linewidth]{figures/neuron-state-dynamics.pdf}
+  \caption{Neuron state on a natural sensor stream.  \textbf{a}, State of four
+  second-layer neurons during the same 128 consecutive CAPTURE-24 observations.
+  The neurons, denoted A--D, were selected uniformly at random before the
+  traces were inspected.  \textbf{b}, Distributions over the identical
+  interval; dots mark medians and bars mark interquartile ranges.}
+  \label{fig:neuron-state-dynamics}
 \end{figure}
 
-\begin{figure}[t]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{figures/mnist-performance-comparison.pdf}
   \caption{MNIST accuracy under the controlled temporal relation.
@@ -593,6 +617,13 @@ can make neighboring observations misleading.  Video, audio, and other
 continuous streams require direct evaluation across several independent
 sequences and timescales.
 
+Development results make this boundary concrete.  Across two free-living
+sensor datasets and one dense controlled sensor dataset, chronological order
+did not produce a consistent advantage over shuffling within each stream
+(\cref{tab:natural-order-development}).
+These controls distinguish procedural streaming from evidence that natural
+adjacency is useful; only the former is established here.
+
 Local in time does not mean small in width.  The two dense same-layer operators
 require $O(D^2)$ auxiliary parameters and communication; their use and update
 add two matrix--vector products and two rank-one products per observation.
@@ -623,8 +654,9 @@ $\FinalTeReLAccuracy\pm\FinalTeReLSSD$\% in final evaluation.  The batched
 relaxation reaches 97.30\%, while mechanism controls distinguish temporal
 teaching, variance support, and decorrelation in that relaxation.  These
 results establish deep slow-feature learning local in space and time for the
-controlled relation.  A
-general result for natural temporal order remains open.
+controlled relation.  Development comparisons on three sensor streams do not
+support the same claim for their chronological order; a general result for
+natural temporal order remains open.
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}
@@ -632,6 +664,35 @@ general result for natural temporal order remains open.
 \appendix
 
 \section{Extended comparisons and diagnostics}\label{app:extended-results}
+
+\begin{table}[H]
+\centering
+\caption{Development-only order comparisons on sensor streams.  The two
+learned conditions use the same observations, initialization, updates, and
+linear readout within each row; the random encoder is a fixed-feature
+comparator.  No held-out participant from these protocols was accessed.}
+\label{tab:natural-order-development}
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Dataset & chronological & shuffled within stream & random encoder\\
+\midrule
+CAPTURE-24 (10 s, free living) & 0.3370 & 0.3359 & 0.3398\\
+ExtraSensory (60 s, free living) & 0.4540 & 0.4550 & 0.4502\\
+WISDM (2 s, controlled) & 0.3060 & 0.3061 & 0.3065\\
+\bottomrule
+\end{tabular}
+\vspace{2pt}
+
+\footnotesize Entries are macro-F1 from fixed development runs.
+CAPTURE-24 is slightly better in chronological order than after shuffling but
+remains below random features; ExtraSensory exceeds random features without an
+order advantage; WISDM is effectively tied.  These single-initialization
+results are descriptive, not inferential.  The CAPTURE-24 state figure uses the
+first uninterrupted 128-observation segment beginning after one quarter of the
+first presentation and four neurons drawn uniformly from the second layer;
+both choices were fixed before state values were read.
+\end{table}
 
 \begin{table}[H]
 \centering
