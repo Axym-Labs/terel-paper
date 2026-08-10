@@ -1,0 +1,158 @@
+\documentclass[tikz,border=2pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{mathpazo}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\usetikzlibrary{arrows.meta,calc,positioning}
+
+\definecolor{AxymPrimary}{HTML}{3F21B6}
+\definecolor{AxymInk}{HTML}{111827}
+\definecolor{AxymMuted}{HTML}{4B5563}
+\definecolor{AxymRule}{HTML}{CBD0D8}
+\definecolor{AxymPale}{HTML}{F0EDFC}
+\definecolor{AxymSoft}{HTML}{F7F7F8}
+
+\tikzset{
+  panel/.style={
+    draw=AxymRule,
+    line width=0.65pt,
+    rounded corners=2.2pt,
+    minimum width=5.05cm,
+    minimum height=5.80cm,
+    inner sep=0pt
+  },
+  term/.style={
+    minimum width=4.35cm,
+    minimum height=0.78cm,
+    align=center,
+    font=\footnotesize,
+    text=AxymInk
+  },
+  statebox/.style={
+    draw=AxymPrimary,
+    fill=AxymPale,
+    line width=0.8pt,
+    rounded corners=2pt,
+    minimum width=4.12cm,
+    minimum height=1.02cm,
+    align=center,
+    text=AxymInk
+  },
+  rulebox/.style={
+    draw=AxymRule,
+    fill=AxymSoft,
+    line width=0.55pt,
+    rounded corners=2pt,
+    minimum width=4.25cm,
+    minimum height=1.30cm,
+    align=center,
+    text=AxymInk
+  },
+  flow/.style={
+    -{Stealth[length=2.3mm,width=1.55mm]},
+    draw=AxymInk,
+    line width=0.72pt
+  }
+}
+
+\begin{document}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \coordinate (A) at (0,0);
+  \coordinate (B) at (5.80,0);
+  \coordinate (C) at (11.60,0);
+
+  \node[panel] (panel-a) at (A) {};
+  \node[panel] (panel-b) at (B) {};
+  \node[panel] (panel-c) at (C) {};
+
+  % One typographic hierarchy across all three stages.
+  \node[anchor=west,font=\small\bfseries,text=AxymInk]
+    at ($(panel-a.north west)+(0.20,-0.24)$) {a};
+  \node[anchor=north,font=\small\bfseries,text=AxymInk]
+    at ($(panel-a.north)+(0,-0.22)$) {Form the target};
+  \node[anchor=north,font=\footnotesize,text=AxymMuted,align=center]
+    at ($(panel-a.north)+(0,-0.68)$)
+    {Soft-SFA supplies three local forces.};
+
+  \node[anchor=west,font=\small\bfseries,text=AxymInk]
+    at ($(panel-b.north west)+(0.20,-0.24)$) {b};
+  \node[anchor=north,font=\small\bfseries,text=AxymInk]
+    at ($(panel-b.north)+(0,-0.22)$) {Define the neuron state};
+  \node[anchor=north,font=\footnotesize,text=AxymMuted,align=center]
+    at ($(panel-b.north)+(0,-0.68)$)
+    {Map the target residual to preactivation.};
+
+  \node[anchor=west,font=\small\bfseries,text=AxymInk]
+    at ($(panel-c.north west)+(0.20,-0.24)$) {c};
+  \node[anchor=north,font=\small\bfseries,text=AxymInk]
+    at ($(panel-c.north)+(0,-0.22)$) {Update local synapses};
+  \node[anchor=north,font=\footnotesize,text=AxymMuted,align=center]
+    at ($(panel-c.north)+(0,-0.68)$)
+    {The same state supplies both updates.};
+
+  % Stage a: identical rows make the three forces immediately comparable.
+  \node[term] at ($(A)+(0,1.18)$)
+    {\bfseries Slowness\\[-1pt]
+     $r_t^{\mathrm{slow}}=I_t(z_t-p_t)$};
+  \node[term] at ($(A)+(0,0.24)$)
+    {\bfseries Variance preservation\\[-1pt]
+     $r_t^{\mathrm{var}}=-\dfrac{\lambda_V}{\lambda_S}
+       g_t\odot(z_t-\mu)$};
+  \node[term] at ($(A)+(0,-0.78)$)
+    {\bfseries Decorrelation\\[-1pt]
+     $r_t^{\mathrm{cov}}=\dfrac{\lambda_C}{2\lambda_S}
+       A(z_t-\mu)$};
+  \draw[AxymRule,line width=0.55pt]
+    ($(panel-a.south west)+(0.25,1.10)$) --
+    ($(panel-a.south east)+(-0.25,1.10)$);
+  \node[font=\small,text=AxymInk,align=center]
+    at ($(A)+(0,-2.15)$)
+    {$\displaystyle \hat z_t=\operatorname{sg}
+      \!\left(z_t-r_t^{\mathrm{slow}}-r_t^{\mathrm{var}}
+      -r_t^{\mathrm{cov}}\right)$};
+
+  % Stage b: the state transformation is the only accented path.
+  \node[rulebox,minimum height=1.05cm] (base) at ($(B)+(0,0.93)$)
+    {\footnotesize\bfseries Base state\\[-1pt]
+     $\displaystyle b_t=J_{\phi,t}^{\mathsf T}(z_t-\hat z_t)$};
+  \draw[flow] (base.south) -- node[right=2pt,font=\scriptsize,text=AxymMuted]
+    {one inhibitory pass} ($(base.south)+(0,-0.72)$);
+  \node[statebox] (state) at ($(B)+(0,-0.65)$)
+    {\footnotesize\bfseries Neuron state\\[-1pt]
+     $\displaystyle \textcolor{AxymPrimary}{s_t}
+       =b_t-\eta\kappa M b_t$};
+  \node[font=\footnotesize,text=AxymMuted,align=center]
+    at ($(B)+(0,-1.79)$)
+    {A postsynaptic state retained only\\
+     for the current local update.};
+
+  % Stage c: equal cards expose the shared postsynaptic factor.
+  \node[rulebox] (feedforward) at ($(C)+(0,0.83)$)
+    {\footnotesize\bfseries Feedforward synapse\\[-1pt]
+     $\displaystyle \nabla_{W_{ji}}\widetilde L_a
+       \propto \textcolor{AxymPrimary}{s_{t,j}}x_{t,i}$};
+  \node[rulebox] (lateral) at ($(C)+(0,-0.82)$)
+    {\footnotesize\bfseries Lateral synapse\\[-1pt]
+     $\displaystyle \Delta M_{jk}
+       \propto-\textcolor{AxymPrimary}{s_{t,j}}
+       \textcolor{AxymPrimary}{s_{t,k}}$};
+  \node[font=\footnotesize,text=AxymMuted,align=center]
+    at ($(C)+(0,-2.16)$)
+    {Endpoint activities determine\\
+     each change; no error arrives\\
+     from a later layer.};
+
+  % Conventional connectors occupy equal gutters and never cross a label.
+  \draw[flow] (panel-a.east) -- (panel-b.west);
+  \draw[flow] (panel-b.east) -- (panel-c.west);
+
+  % A single regular footer states the locality boundary without another visual idiom.
+  \draw[AxymRule,line width=0.6pt]
+    ($(panel-a.south west)+(0,-0.28)$) --
+    ($(panel-c.south east)+(0,-0.28)$);
+  \node[anchor=north,font=\footnotesize,text=AxymInk,align=center]
+    at ($(B)+(0,-3.22)$)
+    {Local in time: fixed detached state \qquad
+     Local in space: endpoint signals and same-layer inhibition};
+\end{tikzpicture}
+\end{document}
