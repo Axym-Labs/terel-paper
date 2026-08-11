@@ -1,42 +1,46 @@
 # Temporal Regularized Learning paper
 
-The manuscript centers TeReL, a samplewise slow-feature rule local in space and
-time. A regularized activation target defines a preactivation neuron state.
-The feedforward gradient is the outer product of that postsynaptic state and
-presynaptic activity; pairs of the same states drive a learned anti-Hebbian
-lateral rule. TeReL-Offline is the less constrained minibatch reference.
+This repository contains the TeReL manuscript and its figures. The paper
+centers the samplewise method: a detached slow-feature target defines a signed
+postsynaptic neuron state, whose outer product with presynaptic activity gives
+the feedforward gradient. One same-layer matrix supplies an explicit state
+correction and receives an anti-Hebbian state--state contribution.
 
-The canonical MNIST result uses plain SGD, batch size one, two data
-presentations, and one lateral matrix-vector pass. It reaches 95.84 ± 0.07%
-accuracy. The lateral pass improves its matched no-inhibition reference by
-1.42 points on validation, with 95% Student-t interval [1.32, 1.52].
-TeReL-Offline reaches 97.30 ± 0.07%; backpropagation and Local SupCon reach
-98.34 ± 0.08% and 96.98 ± 0.10% under the corresponding batched protocol.
+The reported class-chunked MNIST encoder reaches 96.39 ± 0.19% held-out
+linear-probe accuracy with plain SGD and batch size one. TeReL-Offline, the
+spatially and temporally relaxed reference, reaches 98.39 ± 0.04%. Continued
+unlabeled updates with a validation-selected step preserve the representation
+at 96.43 ± 0.15% using the same fitted probe.
 
-Build the paper with:
+Build the paper twice to resolve references:
 
 ```bash
 SOURCE_DATE_EPOCH=1786317315 FORCE_SOURCE_DATE=1 tectonic main.tex
+SOURCE_DATE_EPOCH=1786317315 FORCE_SOURCE_DATE=1 tectonic main.tex
 ```
 
-Regenerate the neuron-state figure with:
-
-```bash
-python figures/neuron-state-dynamics.py figures/neuron-state-dynamics-data.npz
-```
-
-Regenerate the central method figure from its native LaTeX/TikZ source with:
+Regenerate the native-LaTeX method figure with:
 
 ```bash
 SOURCE_DATE_EPOCH=1786317315 FORCE_SOURCE_DATE=1 \
   tectonic figures/terel-method-overview.tex --outdir figures
 ```
 
-The source uses the Axym publication template. Figures are generated from the
-frozen result records; their scripts are in `figures/`. Detailed configuration,
-raw-run, and mechanism tables are placed in the appendix so that the main text
-keeps the scientific argument visible.
+The remaining figures have self-contained scripts in `figures/` and read only
+the final analysis JSON or the archived MNIST visualization data:
 
-The manuscript reports the final method and evaluation protocol. Immutable
-execution identifiers, checksums, and portable analysis commands belong in the
-artifact README rather than in the paper.
+```bash
+python figures/performance-mechanisms.py \
+  --summary /path/to/strengthening2-final-analysis-mnist.json \
+  --output figures/performance-mechanisms
+python figures/representation-geometry.py \
+  --mnist figures/mnist-visual-evidence.npz \
+  --output figures/representation-geometry
+python figures/neuron-state-behavior.py \
+  --mnist figures/mnist-visual-evidence.npz \
+  --output figures/neuron-state-behavior
+```
+
+The manuscript contains only the final method, exact evaluation protocol, raw
+reported values, and scientifically relevant controls. Execution commits and
+checksums are kept in the code artifact's `ARTIFACT_README.md`.

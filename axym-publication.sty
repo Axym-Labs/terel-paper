@@ -60,11 +60,17 @@
 \newcommand{\publicationauthors}[1]{\def\PublicationAuthors{#1}}
 \newcommand{\publicationaffiliations}[1]{\def\PublicationAffiliations{#1}}
 \newcommand{\publicationdate}[1]{\def\PublicationDate{#1}}
+\newcommand{\publicationcode}[1]{\def\PublicationCode{#1}}
+\newcommand{\publicationpaper}[1]{\def\PublicationPaper{#1}}
+\newcommand{\publicationcorrespondence}[1]{\def\PublicationCorrespondence{#1}}
 
 \publicationtitle{Publication title}
 \publicationauthors{Author Name}
 \publicationaffiliations{$^1$Affiliation, City, Country}
 \publicationdate{\today}
+\publicationcode{}
+\publicationpaper{}
+\publicationcorrespondence{}
 
 \newcommand{\makepublicationtitle}{%
   \thispagestyle{empty}%
@@ -84,6 +90,16 @@
     \vspace{0.1em}%
     {\raggedright\fontsize{10pt}{12pt}\selectfont
      \color{AxymMuted}\PublicationDate\par}%
+  \fi
+  \ifx\PublicationCode\empty\else
+    \vspace{0.32em}%
+    {\raggedright\fontsize{7.5pt}{9pt}\selectfont\color{AxymMuted}
+     \textbf{Code:}\enspace
+     \href{\PublicationCode}{\nolinkurl{\PublicationCode}}\hfill
+     \textbf{Paper:}\enspace
+     \href{\PublicationPaper}{\nolinkurl{\PublicationPaper}}\hfill
+     \textbf{Correspondence:}\enspace
+     \href{mailto:\PublicationCorrespondence}{\nolinkurl{\PublicationCorrespondence}}\par}%
   \fi
   \vspace{0.45em}%
   \noindent{\color{AxymInk}\rule{\linewidth}{1pt}}\par

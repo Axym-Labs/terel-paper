@@ -13,146 +13,151 @@
 \definecolor{AxymSoft}{HTML}{F7F7F8}
 
 \tikzset{
-  panel/.style={
+  stage/.style={
     draw=AxymRule,
+    fill=white,
     line width=0.65pt,
     rounded corners=2.2pt,
-    minimum width=5.05cm,
-    minimum height=5.80cm,
+    minimum width=5.15cm,
+    minimum height=5.55cm,
     inner sep=0pt
   },
-  term/.style={
-    minimum width=4.35cm,
-    minimum height=0.78cm,
-    align=center,
-    font=\footnotesize,
-    text=AxymInk
+  number/.style={
+    circle,
+    fill=AxymPrimary,
+    text=white,
+    font=\small\bfseries,
+    minimum size=5.8mm,
+    inner sep=0pt
   },
-  statebox/.style={
+  row/.style={
+    draw=AxymRule,
+    fill=AxymSoft,
+    line width=0.5pt,
+    rounded corners=1.5pt,
+    minimum width=4.45cm,
+    minimum height=0.74cm,
+    text width=4.15cm,
+    inner xsep=4pt,
+    inner ysep=2pt,
+    font=\scriptsize,
+    text=AxymInk,
+    align=center
+  },
+  result/.style={
     draw=AxymPrimary,
     fill=AxymPale,
     line width=0.8pt,
-    rounded corners=2pt,
-    minimum width=4.12cm,
-    minimum height=1.02cm,
-    align=center,
-    text=AxymInk
+    rounded corners=1.8pt,
+    minimum width=4.45cm,
+    minimum height=0.92cm,
+    text width=4.15cm,
+    inner xsep=4pt,
+    inner ysep=3pt,
+    font=\footnotesize,
+    text=AxymInk,
+    align=center
   },
-  rulebox/.style={
-    draw=AxymRule,
-    fill=AxymSoft,
-    line width=0.55pt,
-    rounded corners=2pt,
-    minimum width=4.25cm,
-    minimum height=1.30cm,
-    align=center,
-    text=AxymInk
+  down/.style={
+    -{Stealth[length=2.0mm,width=1.35mm]},
+    draw=AxymMuted,
+    line width=0.65pt
   },
-  flow/.style={
-    -{Stealth[length=2.3mm,width=1.55mm]},
-    draw=AxymInk,
-    line width=0.72pt
+  next/.style={
+    -{Stealth[length=2.3mm,width=1.6mm]},
+    draw=AxymPrimary,
+    line width=0.85pt
   }
 }
 
 \begin{document}
 \begin{tikzpicture}[x=1cm,y=1cm]
   \coordinate (A) at (0,0);
-  \coordinate (B) at (5.80,0);
-  \coordinate (C) at (11.60,0);
+  \coordinate (B) at (5.92,0);
+  \coordinate (C) at (11.84,0);
 
-  \node[panel] (panel-a) at (A) {};
-  \node[panel] (panel-b) at (B) {};
-  \node[panel] (panel-c) at (C) {};
+  \node[stage] (stage-a) at (A) {};
+  \node[stage] (stage-b) at (B) {};
+  \node[stage] (stage-c) at (C) {};
 
-  % One typographic hierarchy across all three stages.
+  % Identical stage headers establish one reading order and one type system.
+  \node[number] at ($(stage-a.north west)+(0.39,-0.39)$) {a};
   \node[anchor=west,font=\small\bfseries,text=AxymInk]
-    at ($(panel-a.north west)+(0.20,-0.24)$) {a};
-  \node[anchor=north,font=\small\bfseries,text=AxymInk]
-    at ($(panel-a.north)+(0,-0.22)$) {Form the target};
-  \node[anchor=north,font=\footnotesize,text=AxymMuted,align=center]
-    at ($(panel-a.north)+(0,-0.68)$)
-    {Soft-SFA supplies three local forces.};
+    at ($(stage-a.north west)+(0.78,-0.39)$) {Form a regularized target};
 
+  \node[number] at ($(stage-b.north west)+(0.39,-0.39)$) {b};
   \node[anchor=west,font=\small\bfseries,text=AxymInk]
-    at ($(panel-b.north west)+(0.20,-0.24)$) {b};
-  \node[anchor=north,font=\small\bfseries,text=AxymInk]
-    at ($(panel-b.north)+(0,-0.22)$) {Define the neuron state};
-  \node[anchor=north,font=\footnotesize,text=AxymMuted,align=center]
-    at ($(panel-b.north)+(0,-0.68)$)
-    {Map the target residual to preactivation.};
+    at ($(stage-b.north west)+(0.78,-0.39)$) {Define the neuron state};
 
+  \node[number] at ($(stage-c.north west)+(0.39,-0.39)$) {c};
   \node[anchor=west,font=\small\bfseries,text=AxymInk]
-    at ($(panel-c.north west)+(0.20,-0.24)$) {c};
-  \node[anchor=north,font=\small\bfseries,text=AxymInk]
-    at ($(panel-c.north)+(0,-0.22)$) {Update local synapses};
-  \node[anchor=north,font=\footnotesize,text=AxymMuted,align=center]
-    at ($(panel-c.north)+(0,-0.68)$)
-    {The same state supplies both updates.};
+    at ($(stage-c.north west)+(0.78,-0.39)$) {Update local synapses};
 
-  % Stage a: identical rows make the three forces immediately comparable.
-  \node[term] at ($(A)+(0,1.18)$)
-    {\bfseries Slowness\\[-1pt]
-     $r_t^{\mathrm{slow}}=I_t(z_t-p_t)$};
-  \node[term] at ($(A)+(0,0.24)$)
-    {\bfseries Variance preservation\\[-1pt]
-     $r_t^{\mathrm{var}}=-\dfrac{\lambda_V}{\lambda_S}
-       g_t\odot(z_t-\mu)$};
-  \node[term] at ($(A)+(0,-0.78)$)
-    {\bfseries Decorrelation\\[-1pt]
-     $r_t^{\mathrm{cov}}=\dfrac{\lambda_C}{2\lambda_S}
-       A(z_t-\mu)$};
   \draw[AxymRule,line width=0.55pt]
-    ($(panel-a.south west)+(0.25,1.10)$) --
-    ($(panel-a.south east)+(-0.25,1.10)$);
-  \node[font=\small,text=AxymInk,align=center]
-    at ($(A)+(0,-2.15)$)
-    {$\displaystyle \hat z_t=\operatorname{sg}
-      \!\left(z_t-r_t^{\mathrm{slow}}-r_t^{\mathrm{var}}
-      -r_t^{\mathrm{cov}}\right)$};
+    ($(stage-a.north west)+(0.28,-0.77)$) --
+    ($(stage-a.north east)+(-0.28,-0.77)$);
+  \draw[AxymRule,line width=0.55pt]
+    ($(stage-b.north west)+(0.28,-0.77)$) --
+    ($(stage-b.north east)+(-0.28,-0.77)$);
+  \draw[AxymRule,line width=0.55pt]
+    ($(stage-c.north west)+(0.28,-0.77)$) --
+    ($(stage-c.north east)+(-0.28,-0.77)$);
 
-  % Stage b: the state transformation is the only accented path.
-  \node[rulebox,minimum height=1.05cm] (base) at ($(B)+(0,0.93)$)
-    {\footnotesize\bfseries Base state\\[-1pt]
-     $\displaystyle b_t=J_{\phi,t}^{\mathsf T}(z_t-\hat z_t)$};
-  \draw[flow] (base.south) -- node[right=2pt,font=\scriptsize,text=AxymMuted]
-    {one inhibitory pass} ($(base.south)+(0,-0.72)$);
-  \node[statebox] (state) at ($(B)+(0,-0.65)$)
-    {\footnotesize\bfseries Neuron state\\[-1pt]
-     $\displaystyle \textcolor{AxymPrimary}{s_t}
-       =b_t-\eta\kappa M b_t$};
-  \node[font=\footnotesize,text=AxymMuted,align=center]
-    at ($(B)+(0,-1.79)$)
-    {A postsynaptic state retained only\\
-     for the current local update.};
+  % Stage 1: three equally weighted soft-SFA contributions.
+  \node[row] at ($(A)+(0,1.28)$)
+    {Temporal\\[-1pt]$r_t^{\mathrm{time}}=I_t(z_t-p_t)$};
+  \node[row] at ($(A)+(0,0.37)$)
+    {Variance\\[-1pt]
+     $r_t^{\mathrm{var}}=-\dfrac{\lambda_V}{\lambda_S}
+       g_t\odot(z_t-\mu_t)$};
+  \node[row] at ($(A)+(0,-0.54)$)
+    {Covariance\\[-1pt]
+     $r_t^{\mathrm{cov}}=\dfrac{\lambda_C}{2\lambda_S}
+       \operatorname{offdiag}(M_t)(z_t-\mu_t)$};
+  \node[result] (target) at ($(A)+(0,-1.78)$)
+    {$r_t=r_t^{\mathrm{time}}+r_t^{\mathrm{var}}+r_t^{\mathrm{cov}}$\\[-1pt]
+     $\widehat z_t=z_t-r_t$};
+  \draw[down] ($(A)+(0,-0.95)$) -- (target.north);
 
-  % Stage c: equal cards expose the shared postsynaptic factor.
-  \node[rulebox] (feedforward) at ($(C)+(0,0.83)$)
-    {\footnotesize\bfseries Feedforward synapse\\[-1pt]
-     $\displaystyle \nabla_{W_{ji}}\widetilde L_a
-       \propto \textcolor{AxymPrimary}{s_{t,j}}x_{t,i}$};
-  \node[rulebox] (lateral) at ($(C)+(0,-0.82)$)
-    {\footnotesize\bfseries Lateral synapse\\[-1pt]
-     $\displaystyle \Delta M_{jk}
-       \propto-\textcolor{AxymPrimary}{s_{t,j}}
-       \textcolor{AxymPrimary}{s_{t,k}}$};
-  \node[font=\footnotesize,text=AxymMuted,align=center]
-    at ($(C)+(0,-2.16)$)
-    {Endpoint activities determine\\
-     each change; no error arrives\\
-     from a later layer.};
+  % Stage 2: exact ReLU residual followed by exactly one correction.
+  \node[row,minimum height=0.86cm] (base) at ($(B)+(0,0.95)$)
+    {$b_t=(z_t-\widehat z_t)\odot\mathbf 1[a_t>0]$};
+  \node[anchor=south,font=\scriptsize,text=AxymMuted]
+    at ($(base.north)+(0,0.08)$) {Exact preactivation residual};
+  \draw[down] (base.south) -- node[right=2pt,font=\scriptsize,text=AxymMuted]
+    {one correction} ($(base.south)+(0,-0.86)$);
+  \node[result] (state) at ($(B)+(0,-0.67)$)
+    {$s_t=b_t-\eta\kappa M_t b_t$};
+  \node[font=\footnotesize,text=AxymMuted,align=center,text width=4.25cm]
+    at ($(B)+(0,-1.78)$)
+    {$s_{t,j}$ is the postsynaptic value\\
+     used by neuron $j$ for this update.};
 
-  % Conventional connectors occupy equal gutters and never cross a label.
-  \draw[flow] (panel-a.east) -- (panel-b.west);
-  \draw[flow] (panel-b.east) -- (panel-c.west);
+  % Stage 3: the same postsynaptic factor reaches both synapse types.
+  \node[row,minimum height=1.02cm] (ff) at ($(C)+(0,0.91)$)
+    {Feedforward\\[-1pt]
+     $W^+=(1-\alpha\lambda_W)W-\alpha c\,s_tx_t^{\mathsf T}$};
+  \node[row,minimum height=1.25cm] (lat) at ($(C)+(0,-0.55)$)
+    {Lateral\\[-1pt]$M^+=\rho M+(1-\rho)Q_t$\\[-1pt]
+     $Q_t=(1-\gamma)\operatorname{offdiag}(\bar z_t\bar z_t^{\mathsf T})
+       +\gamma s_ts_t^{\mathsf T}$};
+  \node[font=\footnotesize,text=AxymMuted,align=center,text width=4.25cm]
+    at ($(C)+(0,-1.78)$)
+    {Feedforward endpoints: $x_i,s_j$\\
+     Lateral endpoints: $\bar z_j,\bar z_k$ and $s_j,s_k$};
 
-  % A single regular footer states the locality boundary without another visual idiom.
-  \draw[AxymRule,line width=0.6pt]
-    ($(panel-a.south west)+(0,-0.28)$) --
-    ($(panel-c.south east)+(0,-0.28)$);
+  % Short arrows live entirely in equal gutters.
+  \draw[next] ($(stage-a.east)+(0,0)$) -- ($(stage-b.west)+(0,0)$);
+  \draw[next] ($(stage-b.east)+(0,0)$) -- ($(stage-c.west)+(0,0)$);
+
+  % One footer states why the construction matters.
+  \draw[AxymPrimary,line width=0.8pt]
+    ($(stage-a.south west)+(0,-0.31)$) --
+    ($(stage-c.south east)+(0,-0.31)$);
   \node[anchor=north,font=\footnotesize,text=AxymInk,align=center]
-    at ($(B)+(0,-3.22)$)
-    {Local in time: fixed detached state \qquad
-     Local in space: endpoint signals and same-layer inhibition};
+    at ($(B)+(0,-3.13)$)
+    {One observation at a time \qquad
+     detached state \qquad
+     no error signal from a later layer};
 \end{tikzpicture}
 \end{document}

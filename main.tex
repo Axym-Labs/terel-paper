@@ -1,828 +1,674 @@
 \documentclass[11pt]{article}
 
 \usepackage{axym-publication}
-\usepackage{url}
-\usepackage{amsfonts}
-\usepackage{placeins}
-\usepackage{float}
-\usepackage{algpseudocode}
+\usepackage{mathtools}
 \usepackage{amsthm}
 \usepackage{array}
-\usepackage{natbib}
-\usepackage[capitalize,nameinlink]{cleveref}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[capitalise,noabbrev]{cleveref}
 
 \newtheorem{proposition}{Proposition}
-\newtheorem{definition}{Definition}
-\newfloat{algorithm}{tbp}{loa}
-\floatname{algorithm}{Algorithm}
-
-\raggedbottom
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\setlength{\emergencystretch}{3em}
+\setlist{nosep,leftmargin=1.35em}
 
 \publicationtitle{Temporal Regularized Learning: Deep Slow-Feature Learning
 Local in Space and Time}
-\publicationauthors{Anonymous Authors}
-\publicationaffiliations{}
-\publicationdate{}
+\publicationauthors{Davide Wiest}
+\publicationaffiliations{Department of Computer Science, TU Darmstadt; Independent Researcher\\Darmstadt, Germany}
+\publicationdate{August 2026}
+\publicationcode{https://github.com/Axym-Labs/TeReL}
+\publicationpaper{https://doi.org/10.5281/zenodo.18673107}
+\publicationcorrespondence{dw@axym.org}
 
 \newcommand{\TeReL}{\textsc{TeReL}}
 \newcommand{\TeReLOffline}{\TeReL{}-Offline}
 \newcommand{\stopgrad}{\operatorname{sg}}
 \newcommand{\offdiag}{\operatorname{offdiag}}
-\newcommand{\FinalTeReLAccuracy}{95.84}
-\newcommand{\FinalTeReLSSD}{0.07}
+\newcommand{\FinalTeReLAccuracy}{96.39}
+\newcommand{\FinalTeReLSD}{0.19}
+\newcommand{\FinalOfflineAccuracy}{98.39}
+\newcommand{\FinalOfflineSD}{0.04}
+\newcommand{\FinalSupConAccuracy}{96.95}
+\newcommand{\FinalSupConSD}{0.13}
+\newcommand{\FinalSupervisedAccuracy}{98.17}
+\newcommand{\FinalSupervisedSD}{0.07}
 
 \providecommand{\LeadFigurePath}{figures/terel-method-overview.pdf}
 \providecommand{\LeadFigureCaption}{%
-\TeReL{} converts soft-SFA forces into neuron-local synaptic signals.
-\textbf{a}, The forces define a detached target.  \textbf{b}, Its preactivation
-residual becomes the neuron state, followed by one inhibitory pass.
-\textbf{c}, Presynaptic activity and neuron state form the feedforward
-gradient; pairs of neuron states drive the anti-Hebbian lateral change.}
+\TeReL{} turns a soft slow-feature objective into local synaptic quantities.
+\textbf{a}, Three regularizers form a detached activation target.
+\textbf{b}, Its exact ReLU residual becomes a postsynaptic neuron state after
+one same-layer correction. \textbf{c}, A feedforward synapse receives the
+presynaptic value and this neuron state; one lateral matrix accumulates
+representation and state second moments. Each learned layer completes these
+three steps before passing a detached activation to the next layer.}
 
 \begin{document}
 
 \makepublicationtitle
 
 \publicationabstract{%
-Slow Feature Analysis (SFA) learns persistent factors by making adjacent
-representations similar while preserving their variance and decorrelating
-their coordinates.  Can these three requirements train a deep nonlinear
-encoder without carrying an error through depth or time?  We derive a
-regularized target from a soft SFA objective and map its residual to the
-preactivation of each neuron.  Without lateral coupling, the outer product of
-this neuron state and presynaptic activity is the exact feedforward gradient.
-One pass through a learned inhibitory operator modifies the state used for the
-feedforward update, and pairs of the same states drive an anti-Hebbian lateral
-rule.
+Slow Feature Analysis learns representations that vary slowly without
+collapsing or duplicating coordinates. Applying this objective to a deep
+network usually introduces credit assignment across layers, observations, or
+both. Temporal Regularized Learning (\TeReL{}) instead constructs a detached
+regularized target at every layer and maps the target residual to the state of
+each neuron. The feedforward gradient then factors into a presynaptic value
+and this postsynaptic state. A single lateral matrix corrects the state once
+and receives an anti-Hebbian state--state contribution. The resulting encoder
+processes one observation at a time, sends no error signal across learned
+layers or time, and stores three causal scalars per neuron together with one
+matrix of auxiliary lateral parameters per layer. On a class-chunked MNIST stream,
+batch-size-one training with stochastic gradient descent reaches
+$\FinalTeReLAccuracy\pm\FinalTeReLSD$\% held-out linear-probe accuracy. Random
+features reach $95.14\pm0.27$\%, and a layer-local supervised contrastive
+network reaches $\FinalSupConAccuracy\pm\FinalSupConSD$\%. A spatially and
+temporally relaxed reference, \TeReLOffline{}, reaches
+$\FinalOfflineAccuracy\pm\FinalOfflineSD$\%. Shuffling the stream or removing
+the temporal term reduces accuracy. Removing variance control produces a
+nearly constant representation, whereas removing covariance control causes
+numerical failure. Continued
+unlabeled updates preserve held-out accuracy when their step size is selected
+for a trained representation. Together, these results establish a simple deep
+slow-feature rule for online and memory-constrained learning.}
 
-The resulting method, Temporal Regularized Learning (\TeReL{}),
-processes one observation at a time, retains fixed-size detached state, and
-sends no error between layers.  Its encoder uses plain stochastic gradient
-descent without optimizer state.  On label-ordered MNIST, it reaches
-$\FinalTeReLAccuracy\pm\FinalTeReLSSD$\% held-out accuracy after two data
-presentations.  On a train-derived validation split, residual-state inhibition
-improves a matched samplewise reference by $1.42$ percentage points while
-preserving effective rank.  A minibatch relaxation, \TeReLOffline{}, reaches
-$97.30\pm0.07$\%, compared with $98.34\pm0.08$\% for presentation-matched
-backpropagation and $96.98\pm0.10$\% for Local SupCon.  Objective ablations and
-a direct-covariance control in the minibatch relaxation identify the roles of
-the three regularizers and the lagged decorrelation signal.  The evidence
-establishes local learning under a controlled temporal relation; it does not
-show that arbitrary natural adjacency is informative.}
-
-\publicationleadfigure[0.34\textheight]{\LeadFigurePath}{\LeadFigureCaption}
+\publicationleadfigure[0.285\textheight]{\LeadFigurePath}{\LeadFigureCaption}
 \label{fig:overview}
 
 \section{Introduction}
 
-The observations in a temporal stream may change faster than the causes that
-produce them.  A useful representation should then move slowly.  Slowness
-alone, however, has an immediate failure: every observation can map to the same
-point.  SFA removes this solution by requiring nonzero variance and
-decorrelated coordinates~\cite{wiskott2002}.  These requirements define the
-learning problem: slow, noncollapsed, and nonredundant representations.
+Temporal continuity supplies a learning signal before a task label is known.
+When consecutive observations share a slowly changing cause, a representation
+can suppress incidental variation by remaining close across time. Slow Feature
+Analysis (SFA) formalizes this principle while preventing the constant solution
+through variance and decorrelation constraints~\cite{wiskott2002}. Closely
+related temporal-coherence objectives have long been used to learn visual
+invariances~\cite{foldiak1991}, and modern self-supervised objectives likewise
+combine agreement with variance or redundancy control~\cite{oord2018,zbontar2021,bardes2022}.
 
-Our question is whether they also define a learning rule that is local in
-space and time.  Spatial locality means that a synapse receives quantities
-available at its endpoints, possibly after same-layer neural dynamics, but no
-error from a later layer.  Temporal locality means that the update reads a
-fixed detached state rather than an activation graph extending into the past.
-These are restrictions on credit assignment, not claims of neuron independence
-or biological realism.
+The optimization mechanism matters when observations arrive as a stream.
+Backpropagation through a sequence retains an activation graph across time;
+backpropagation through depth also transports a credit signal across learned
+layers~\cite{rumelhart1986}. Predictive-coding and equilibrium formulations can
+replace that graph with repeated neural dynamics, but then require iterative
+settling~\cite{rao1999,scellier2017}. Both choices complicate continual
+operation on hardware whose memory, communication, or update schedule is
+constrained~\cite{indiveri2015,davies2018}. A learning rule local in time should
+read only bounded detached state. A rule local in space should update a
+synapse from quantities available at its two endpoints and within its layer.
 
-\TeReL{} realizes both restrictions by working backward from the soft-SFA
-gradient.  The three objective terms first define a detached regularized
-target.  Each neuron then tracks its preactivation residual to this target.
-For a linear synapse, the gradient factors into the neuron's residual state and
-the presynaptic activity.  Their running pairwise second moment defines a dense
-inhibitory operator.  Both factors of the feedforward rule are available
-at the synapse, giving it a Hebbian two-factor form; the signed
-lateral change is anti-Hebbian.  \Cref{sec:method} states both signs explicitly.
-Plain stochastic gradient descent applies this outer product directly; no
-optimizer moments alter the synaptic update.
+Hebbian and anti-Hebbian networks give spatially local learning a useful
+algebra: similarity-matching objectives yield Hebbian feedforward and
+anti-Hebbian lateral rules for linear
+representations~\cite{pehlevan2015,pehlevan2018}. A deep slow-feature rule
+requires a richer
+postsynaptic quantity: each neuron must combine temporal attraction, variance
+preservation, and decorrelation before its synapses change. We construct this
+quantity directly from a regularized target. For every observation and every
+layer, the target residual is mapped through the local activation derivative
+and corrected once by a same-layer matrix. The resulting signed value is the
+neuron state used by both feedforward and lateral plasticity.
 
-Inhibitory correction of the residual state is the central distinction between
-\TeReL{} and the exact detached soft-SFA gradient.  In a matched batch-size-one
-experiment, it raises validation accuracy by $1.42$ points without sacrificing
-effective rank.  \TeReLOffline{} provides a less restrictive performance reference.  It
-retains adjacent activations in a short computation graph and uses minibatch
-normalization; it is not the definition of the method.
+This construction yields \TeReL{}, a deep nonlinear encoder trained one
+observation at a time. Adjacent learned layers are separated by a stop-gradient,
+and all temporal references are detached. The feedforward update is an outer
+product of presynaptic activity and the postsynaptic neuron state. One lateral
+matrix serves both target decorrelation and state correction; its state--state
+component is anti-Hebbian under the inhibitory sign convention. Running
+moments, lateral parameters, and feedforward weights follow fixed-size leaky
+recurrences. No optimizer moments are required by the reported online rule.
 
-The source of temporal order bounds what these experiments establish.  We
-construct the MNIST stream from label-homogeneous chunks.  The labels determine
-adjacency but do not enter the \TeReL{} objective.  This isolates a task-aligned
-temporal relation; it is not unlabeled self-supervision, and it supplies no
-evidence that arbitrary natural adjacency is informative.
+The empirical study separates the locality result from the performance made
+available by relaxing it. \TeReL{} uses batch size one and two passes over the
+training observations. \TeReLOffline{} retains a subsequence, evaluates the
+soft-SFA loss only at the final layer, and backpropagates through both depth and
+the subsequence. On MNIST, \TeReL{} improves over random features, a linear
+input reference, batch SFA, and incremental SFA. It remains within 0.57
+percentage points of layer-local supervised contrastive learning despite using
+no labels in its objective. \TeReLOffline{} reaches the accuracy of a fully
+offline supervised network. Matched interventions further show that the
+temporal order and each regularizer affect the learned representation.
 
 The paper makes three contributions:
 \begin{enumerate}
-  \item We derive a regularized target and a preactivation residual state whose
-  outer product with presynaptic activity is the exact feedforward gradient of
-  a detached surrogate.
-  \item We learn inhibitory lateral connections from the same neuron states and
-  state the resulting locality boundary and $O(D^2)$ cost exactly.
-  \item We evaluate the samplewise rule, a batched relaxation, Local SupCon,
-  direct covariance, and the objective mechanisms under one controlled MNIST
-  construction, with selection separated from final evaluation.
+  \item a regularized activation target whose ReLU preactivation residual is a
+  neuron-local postsynaptic state;
+  \item a batch-size-one deep learning rule with Hebbian-factor feedforward
+  gradients, an anti-Hebbian lateral contribution, one explicit same-layer
+  correction, and one auxiliary matrix per layer; and
+  \item a prespecified comparison with optimization-rich, supervised, random,
+  and classical SFA references, plus matched mechanism tests.
 \end{enumerate}
 
-\section{Temporal Regularized Learning}\label{sec:method}
+\section{Temporal Regularized Learning}
+\label{sec:method}
 
-We begin with one observation at one learned layer.  Its soft-SFA objective
-defines a target; the residual to that target defines the neuron state used by
-the feedforward and lateral synapses.
+\subsection{One observation at one layer}
 
-\subsection{A soft-SFA target}
-
-For observation $t$, let
+Consider observation $t$ at a layer with input $x_t\in\mathbb R^d$ and width
+$D$. The layer computes
 \begin{equation}
-  a_t=W x_t+c,\qquad z_t=\phi(a_t),\qquad z_t\in\mathbb R^D,
+  a_t=W_tx_t+q_t,
+  \qquad z_t=\phi(a_t),
+  \label{eq:forward}
 \end{equation}
-where $x_t$ is detached from the preceding learned layer.  Before processing
-$x_t$, the layer retains the preceding activation $p_t$, running mean $\mu$,
-running variance $\sigma^2$, and off-diagonal second-moment operator $A$.
-All four are detached.  The indicator $I_t$ is zero at a sequence boundary and
-one otherwise.  For this observation, define
+where $W_t\in\mathbb R^{D\times d}$, $q_t\in\mathbb R^D$, and $z_t$ is passed
+to the next learned layer only after detachment. Before this observation, each
+neuron stores a preceding activation $p_t$, a running mean $\mu_t$, and a
+running variance $v_t$. The layer also stores a lateral matrix
+$M_t\in\mathbb R^{D\times D}$. These quantities are fixed during the current
+gradient calculation. Let $I_t\in\{0,1\}$ indicate whether $p_t$ belongs to
+the same sequence, and write $\bar z_t=z_t-\mu_t$ and
+$g_t=[\tau-v_t]_+$ for a variance target $\tau>0$.
+
+The samplewise surrogate contains temporal, variance, and covariance terms:
 \begin{equation}
-\ell_S=\frac{I_t}{D}\|z_t-p_t\|_2^2\;\qquad
-\ell_V=-\frac1D\sum_j[\gamma-\sigma_j^2]_+(z_{t,j}-\mu_j)^2\;\qquad
-\ell_C=\frac1D(z_t-\mu)^\top A\stopgrad(z_t-\mu).
-\label{eq:terel}
+\ell_T=\frac{I_t}{D}\lVert z_t-p_t\rVert_2^2
+\quad
+\ell_V=-\frac1D g_t^\top(\bar z_t\odot\bar z_t)
+\quad
+\ell_C=\frac1D\bar z_t^\top A_t\stopgrad(\bar z_t),
+\qquad A_t=\offdiag(M_t).
+\label{eq:local-losses}
 \end{equation}
 The layer minimizes
-$\ell=\lambda_S\ell_S+\lambda_V\ell_V+\lambda_C\ell_C$.  The three terms favor
-temporal persistence, prevent constant coordinates, and oppose correlated
-coordinates, respectively.  Stored quantities remain fixed during the update.
+$\ell=\lambda_T\ell_T+\lambda_V\ell_V+\lambda_C\ell_C$ with
+$\lambda_T>0$. The first term makes consecutive activations similar. The
+second increases the coordinates whose stored variance lies below $\tau$.
+The third applies a lagged same-layer decorrelation signal. Detachment makes
+each term a function of the current activation and bounded stored quantities,
+without a graph through earlier observations.
 
-These three forces can be written as one target.  Let
-$g=[\gamma-\sigma^2]_+$.  From detached values at the current iterate, form
+\subsection{The regularized target precedes the neuron state}
+
+The three derivatives can be collected before a synapse is updated. Define
 \begin{align}
-r_t={}&I_t(z_t-p_t)
--\frac{\lambda_V}{\lambda_S}g\odot(z_t-\mu)
-+\frac{\lambda_C}{2\lambda_S}A(z_t-\mu),\label{eq:activation-residual}\\
-\hat z_t={}&\stopgrad(z_t-r_t).\label{eq:regularized-target}
+r_t^{T}&=I_t(z_t-p_t),
+&r_t^{V}&=-\frac{\lambda_V}{\lambda_T}g_t\odot\bar z_t,
+&r_t^{C}&=\frac{\lambda_C}{2\lambda_T}A_t\bar z_t,
+\label{eq:residual-components}\\
+r_t&=r_t^{T}+r_t^{V}+r_t^{C},
+&\widehat z_t&=\stopgrad(z_t-r_t).
+\label{eq:regularized-target}
 \end{align}
-The vector $\hat z_t$ is not an externally supplied label.  It is the local
-activation that would cancel the instantaneous combination of temporal,
-variance, and decorrelation forces.
+Thus $\widehat z_t$ is the activation preferred by the instantaneous balance
+of slowness, variance, and decorrelation. It is formed within the layer; it is
+not an external target.
 
-\begin{proposition}[Target equivalence]\label{prop:target}
-At the iterate where \cref{eq:regularized-target} is constructed, the detached
-target loss
+\begin{proposition}[Activation-target equivalence]
+\label{prop:target}
+At the values used to construct \cref{eq:regularized-target},
 \begin{equation}
-  \widetilde\ell_z=\frac{\lambda_S}{D}
-  \|z_t-\hat z_t\|_2^2
-  \label{eq:target-loss}
+  \widetilde\ell_z=\frac{\lambda_T}{D}
+  \lVert z_t-\widehat z_t\rVert_2^2
+  \label{eq:activation-target-loss}
 \end{equation}
-has the same derivative with respect to $z_t$ as $\ell$ in \cref{eq:terel}.
+has the same derivative with respect to $z_t$ as $\ell$.
 \end{proposition}
-The result follows by substituting $z_t-\hat z_t=r_t$ into
-$\partial\widetilde\ell_z/\partial z_t=2\lambda_Sr_t/D$.  The target compresses
-the three local gradients without changing them.
 
-\subsection{From target residual to neuron state}\label{sec:neuron-state}
+\begin{proof}
+The stored $p_t,\mu_t,v_t$, and $M_t$ are constants for differentiation.
+Consequently,
+\begin{align*}
+\nabla_{z_t}(\lambda_T\ell_T)&=\frac{2\lambda_T}{D}r_t^T,&
+\nabla_{z_t}(\lambda_V\ell_V)&=\frac{2\lambda_T}{D}r_t^V,&
+\nabla_{z_t}(\lambda_C\ell_C)&=\frac{2\lambda_T}{D}r_t^C.
+\end{align*}
+Their sum is $2\lambda_T r_t/D$. Since
+$z_t-\widehat z_t=r_t$ at the construction point and the target is detached,
+\cref{eq:activation-target-loss} has the same derivative.
+\end{proof}
 
-The activation residual $r_t=z_t-\hat z_t$ is not yet a neuron state at the
-input to a feedforward synapse.  We map it through the activation Jacobian,
+The activation residual must next be expressed at the input side of the
+nonlinearity. Let
 \begin{equation}
   b_t=J_{\phi,t}^{\top}r_t,
-  \qquad J_{\phi,t}=\left.\frac{\partial\phi(a)}{\partial a}\right|_{a_t}.
-  \label{eq:base-neuron-state}
+  \qquad
+  J_{\phi,t}=\left.\frac{\partial\phi(a)}{\partial a}\right|_{a_t}.
+  \label{eq:base-state}
 \end{equation}
-For an elementwise activation, $b_t=r_t\odot\phi'(a_t)$.  Thus $b_{t,j}$ is the
-preactivation residual tracked by neuron $j$, not an error delivered from
-another layer.
-
-We next let same-layer inhibition act on this state.  Let $M\succeq0$ denote
-the running second moment of the neuron states, let $\kappa\geq0$ set its
-coupling, and let $\eta>0$ be the pass size.  One lateral pass gives
+For the ReLU encoder used in the experiments, this is the explicit signed
+quantity
 \begin{equation}
-s_t=b_t-\eta\kappa M b_t.
-\label{eq:residual-dynamics}
+  b_t=r_t\odot\mathbf 1[a_t>0].
+  \label{eq:relu-state}
 \end{equation}
-The correction requires one matrix--vector product and no iterative
-settling.  Setting $\kappa=0$ recovers $s_t=b_t$ and hence the exact
-soft-objective gradient.  Nonzero inhibition deliberately modifies that
-gradient by subtracting the component $\eta\kappa M b_t$.
-
-Now define the detached preactivation target
-$\hat a_t=\stopgrad(a_t-s_t)$.  Its mean-squared error gives
+No automatic-differentiation graph is needed to obtain it. A single
+same-layer correction produces the postsynaptic neuron state
 \begin{equation}
-\widetilde\ell_a=\frac{\lambda_S}{D}\|a_t-\hat a_t\|_2^2,
-\qquad
-\frac{\partial\widetilde\ell_a}{\partial W}
-=\frac{2\lambda_S}{D}s_t x_t^\top,
-\qquad
-\frac{\partial\widetilde\ell_a}{\partial c}
-=\frac{2\lambda_S}{D}s_t.
-\label{eq:feedforward-gradient}
+  s_t=b_t-\eta\kappa M_tb_t,
+  \label{eq:state-correction}
 \end{equation}
-The gradient has the intended two-factor Hebbian form: presynaptic activity
-times the state of the postsynaptic neuron.  Plain
-gradient descent would use
-$\Delta W=-\alpha(2\lambda_S/D)s_tx_t^\top$, which is the update used by
-\TeReL{}.  We do not absorb the descent sign into the word ``Hebbian.''
+where $\eta>0$ is the correction step and $\kappa\geq0$ its strength. This is
+one matrix--vector operation in the feedforward computation. It is not an
+iterative settling procedure.
 
-\subsection{Anti-Hebbian learning on the same states}
-
-After the parameter update, the same detached neuron states update $M$:
+Define the detached preactivation target
+$\widehat a_t=\stopgrad(a_t-s_t)$. Its local mean-squared error gives
 \begin{equation}
-M^+ = \rho_M M +(1-\rho_M)\frac{1}{D}s_ts_t^\top.
-\label{eq:residual-lateral-update}
+  \widetilde\ell_a=\frac{\lambda_T}{D}
+  \lVert a_t-\widehat a_t\rVert_2^2,
+  \qquad
+  \nabla_{W_t}\widetilde\ell_a=\frac{2\lambda_T}{D}s_tx_t^\top.
+  \label{eq:feedforward-factor}
 \end{equation}
-The positive-semidefinite matrix $M$ stores residual-state second moments and
-appears with a negative sign in \cref{eq:residual-dynamics}.  Equivalently, the
-signed lateral weight is $L^{\rm lat}=-\eta\kappa M$, whose update contains
-$-\eta\kappa(1-\rho_M)s_{t,j}s_{t,k}$.  Positive coactivity therefore
-contributes a negative term to $L^{\rm lat}_{jk}$, which is the anti-Hebbian
-convention used here.  Both endpoints expose neuron states: the lateral update uses
-$s_{t,j}s_{t,k}$, not a residual paired with an unrelated activation.  The
-diagonal of $M$ is nonnegative and acts as learned self-inhibition; the
-off-diagonal entries connect distinct neurons and need not be elementwise
-nonnegative.
-
-The representation operator $A$ and the inhibitory operator $M$ serve
-different purposes.  The former constructs the decorrelation component of
-$\hat z_t$; the latter acts on the resulting neuron states.  We retain $A$
-because replacing its representation statistic by residual-state covariance
-would change the objective rather than merely realize its gradient.
-
-The operator $A$ is a lagged proxy for the current representation covariance.
-For minibatch $\mathcal B_k$ of size $B$, using the mean $\mu_{k-1}$ available
-before that batch, let
+Each feedforward synapse therefore receives a presynaptic scalar $x_{t,i}$
+and a postsynaptic scalar $s_{t,j}$. This is the two-factor locality of a
+Hebbian rule; the sign of $s_{t,j}$ determines potentiation or depression
+under gradient descent. With learning rate $\alpha$ and coupled decay
+$\lambda_W$, the weight recurrence is
 \begin{equation}
-C_k=\offdiag\left[\frac1B\sum_{t\in\mathcal B_k}(z_{k,t}-\mu_{k-1})
-(z_{k,t}-\mu_{k-1})^\top\right].
+  W_{t+1}=(1-\alpha\lambda_W)W_t
+  -\alpha\frac{2\lambda_T}{D}s_tx_t^\top.
+  \label{eq:weight-update}
 \end{equation}
-The direct penalty $\|C_k\|_F^2/D$ has activation gradient
-$4C_k(z_{k,t}-\mu_{k-1})/(BD)$.  Replacing $C_k$ by stored $A_{k-1}$ gives the
-direction in \cref{eq:activation-residual}, up to a positive scale.  The
-substitution is a lagged gradient proxy, not an equality between scalar
-objectives.  The direct minibatch control in \cref{sec:results} tests whether
-the approximation matters in the offline relaxation.
+The corresponding bias update uses $s_t$ alone. The output of this layer is
+detached before it becomes the input to the next learned layer, so no error
+signal crosses the layer boundary.
 
-\subsection{Execution order and locality}\label{sec:gradients}
+\subsection{One lateral matrix and bounded causal state}
 
-The layer reads all state before it writes any state.  After computing
-$z_t$, $\hat z_t$, and $s_t$, it updates $W$ using
-\cref{eq:feedforward-gradient}.  It then stores the current detached activation
-and updates
-\begin{align}
-\mu^+ &= \rho_\mu \mu+(1-\rho_\mu)z_t,\label{eq:mean-update}\\
-(\sigma^2)^+ &= \rho_\mu \sigma^2+(1-\rho_\mu)(z_t-\mu)^2,\label{eq:var-update}\\
-A^+ &= \rho_A A+(1-\rho_A)\offdiag[(z_t-\mu)(z_t-\mu)^\top],
-\label{eq:lat-update}
-\end{align}
-along with \cref{eq:residual-lateral-update}.  A boundary flag invalidates the
-stored predecessor.  No activation graph survives the step.
-
-\begin{algorithm}[H]
-\caption{One samplewise \TeReL{} update.}
-\label{alg:terel}
-\begin{algorithmic}[1]
-\Require observation $x_t$, boundary $I_t$, parameters $W,c$, detached state
-  $p,\mu,\sigma^2,A,M$
-\State $a_t\gets W\stopgrad(x_t)+c$; $z_t\gets\phi(a_t)$
-\State construct $\hat z_t$ by \cref{eq:activation-residual,eq:regularized-target}
-\State $b_t\gets J_{\phi,t}^{\top}(z_t-\hat z_t)$
-\State compute $s_t$ with the lateral correction in \cref{eq:residual-dynamics}
-\State update $W,c$ from the detached target
-  $\hat a_t\gets\stopgrad(a_t-s_t)$
-\State update $p,\mu,\sigma^2,A,M$ from detached $z_t,s_t$
-\end{algorithmic}
-\end{algorithm}
-
-\Cref{alg:terel} is applied independently at each learned layer in the same
-forward pass.  A layer receives the detached activation of its predecessor and
-owns its target, neuron state, and running matrices.
-
-At a feedforward synapse $W_{ji}$, \cref{eq:feedforward-gradient} uses only the
-presynaptic activity $x_i$ and postsynaptic state $s_j$.  Computing $s_j$ may
-use signals delivered by lateral connections $M_{jk}$.  Each such connection
-updates from the states at its two endpoints.  No error crosses a learned
-layer boundary, so the rule is neuron-local in space but not
-neuron-independent.  The predecessor, moments, and lateral matrices are
-detached and fixed in size; the rule is also local in time.
-
-\subsection{The batched relaxation}
-
-\TeReLOffline{} is a performance reference that relaxes temporal locality.  It
-optimizes \cref{eq:terel} directly on class-homogeneous chunks, keeps
-$p_t=z_{t-1}$ live within a chunk, and uses BatchNorm.  The temporal derivative
-then includes a future term.  With $N_I=\sum_t I_t$ valid transitions, it is
+The same matrix supports the covariance signal in
+\cref{eq:residual-components} and the state correction in
+\cref{eq:state-correction}. After the synaptic update, form
 \begin{equation}
-\frac{2\lambda_S}{N_I D}
-\left[I_t(z_t-z_{t-1})-I_{t+1}(z_{t+1}-z_t)\right].
-\label{eq:batch-gradient}
+  Q_t=(1-\omega)\offdiag(\bar z_t\bar z_t^\top)
+      +\omega s_ts_t^\top,
+  \qquad
+  M_{t+1}=\rho M_t+(1-\rho)Q_t,
+  \label{eq:lateral-update}
 \end{equation}
-This derivative requires a short temporal graph.  Training-mode BatchNorm also
-couples examples within each coordinate.  BatchNorm is an optimization choice
-in this relaxation, not a fourth part of the method and not part of the
-\TeReL{} locality claim.
+with $\omega\in[0,1]$ and $\rho\in[0,1)$. The off-diagonal part of $M_t$ enters
+the regularized target, while the full matrix enters the neuron-state
+correction. If inhibitory lateral weights are written as $L_t=-M_t$, the
+state component of \cref{eq:lateral-update} contributes
+$-(1-\rho)\omega s_ts_t^\top$ to $L_t$: same-signed neuron states make their
+mutual lateral connection more inhibitory, which is the anti-Hebbian sign.
+The representation component preserves the decorrelation signal required by
+the target.
 
-Thus \TeReL{} has a one-observation update and a fixed, detached temporal
-reference.  \TeReLOffline{}, direct covariance, and Local SupCon instead couple
-examples within a chunk or minibatch; their error graphs are not temporally
-local in this sense.
+The three causal scalars of a neuron follow
+\begin{equation}
+  p_{t+1}=z_t,
+  \qquad
+  \mu_{t+1}=\beta\mu_t+(1-\beta)z_t,
+  \qquad
+  v_{t+1}=\beta v_t+(1-\beta)(z_t-\mu_t)^2.
+  \label{eq:causal-state}
+\end{equation}
+At a sequence boundary, only the validity of $p_t$ is cleared; the learned
+moments and lateral parameters remain. A layer of width $D$ therefore stores
+$3D$ causal scalars and one boundary-validity bit. It also carries $D^2$
+auxiliary lateral parameters, separate from its feedforward weights. The
+reported optimizer is plain stochastic gradient descent and adds no optimizer
+state. For the $784$--$512$--$256$ MNIST encoder, these categories contain
+$2{,}306$ causal scalars, $327{,}680$ auxiliary lateral parameters, and
+$533{,}248$ feedforward parameters.
 
-\subsection{State and compute cost}\label{sec:cost}
+\subsection{The spatially and temporally relaxed reference}
 
-For a width-$D$ layer, \TeReL{} stores three causal scalars per neuron:
-$p_j$, $\mu_j$, and $\sigma_j^2$, together with one layer-validity flag.  The
-auxiliary operators $A,M\in\mathbb R^{D\times D}$ contribute $2D^2$
-parameters; they are not temporal state.  Target construction applies $A$
-once, and the inhibitory correction applies $M$ once; updating the operators
-forms two rank-one outer products.  In the reported encoder, the 655,360
-auxiliary parameters are 1.23 times the 533,248 feedforward parameters.
-Optimizer moments and temporary activations form separate resource categories,
-and none of this training-only storage is needed by the encoder at inference.
+\TeReLOffline{} measures what the same slow-feature principle can learn after
+both locality constraints are relaxed within a subsequence. A complete
+subsequence enters a ReLU multilayer perceptron; the soft-SFA objective is
+evaluated at its final learned layer, and backpropagation differentiates that
+objective through all preceding layers and observations in the subsequence.
+No normalization layer is used. Momentum SGD optimizes this reference, so its
+update is neither neuron-local nor free of optimizer state. It is consequently
+a performance reference, not an alternative definition of \TeReL{}.
 
-\section{Relation to prior work}\label{sec:related}
+\section{Relation to previous work}
 
-\paragraph{SFA and incremental SFA.}
-Temporal slowness, variance preservation, and decorrelation define the SFA
-objective~\cite{wiskott2002}.  Batch SFA whitens observations and extracts
-minor components of their temporal differences.  IncSFA replaces these batch
-operations by incremental PCA and minor-component updates, handles episodic
-boundaries, and admits Hebbian and anti-Hebbian forms~\cite{kompella2012}.
-Bio-SFA likewise derives an online neural system with local synaptic
-updates~\cite{lipshutz2020}.  These methods establish that online and local SFA
-are possible.  \TeReL{} addresses a different question: how a soft-SFA target
-can train several nonlinear layers while blocking gradients at every learned
-layer and time boundary.
+SFA obtains invariant features by minimizing temporal variation under
+normalization and decorrelation constraints~\cite{wiskott2002}. Incremental
+SFA adapts the classical linear construction to streams but retains a
+whitening stage and linear feature extraction~\cite{kompella2012}. Other local
+networks derive linear slow-feature or similarity-matching algorithms with
+Hebbian feedforward and anti-Hebbian lateral plasticity
+~\cite{lipshutz2020,pehlevan2015,pehlevan2018}. \TeReL{} retains this synaptic
+factorization while making the postsynaptic factor the signed residual of a
+nonlinear regularized target at each layer.
 
-Deep gradient-based SFA also predates this work.  PowerSFA differentiates
-through approximate whitening~\cite{schuler2018}, while Slow and Steady Feature
-Analysis penalizes first- and higher-order changes across video
-tuples~\cite{jayaraman2016}.  \TeReL{} keeps only first-order adjacency and
-replaces global whitening by detached statistics and learned same-layer
-operators.  Our classical baseline is a Python 3 port of the published IncSFA
-algorithm, checked against batch SFA on a synthetic stream.
+Modern self-supervised methods also prevent invariant representations from
+collapsing. Contrastive predictive coding uses temporal context and negative
+examples~\cite{oord2018}; Barlow Twins and VICReg instead regulate variance and
+cross-coordinate dependence~\cite{zbontar2021,bardes2022}. \TeReL{} uses a
+samplewise soft-SFA analogue of these three forces. Its focus is the execution
+of the resulting update with bounded temporal state, not a new large-batch
+self-supervised loss.
 
-\paragraph{Trace learning.}
-F\"oldi\'ak-style trace learning exploits temporal persistence through a
-positive activation trace~\cite{foldiak1991}.  That trace differs algebraically
-from the signed temporal residual in \cref{eq:activation-residual}.  The
-distinction matters here because this residual becomes both a postsynaptic
-feedforward factor and the signal at each end of a lateral synapse.
+Layer-local representation learning blocks the backward path between network
+modules~\cite{lowe2019,xiong2020,illing2021,siddiqui2024}. The Layer-local
+Supervised Contrastive (Layer-local SupCon) comparator in our experiments
+trains each layer with a supervised contrastive objective derived from
+\citet{khosla2020}. It removes cross-layer credit assignment but still uses
+labels, minibatches, adaptive optimizer state, and batch normalization.
+\TeReL{} instead constructs its target from temporal and same-layer state and
+processes one observation per update.
 
-\paragraph{Gradient-isolated predictive and contrastive learning.}
-Greedy InfoMax applies local InfoNCE objectives to gradient-isolated modules
-along the natural order of images, audio, and video~\cite{lowe2019}.  CLAPP
-makes contrastive prediction causal and local across depth and time, using
-pre- and postsynaptic activity, predictive dendritic input, and broadcast
-modulation~\cite{illing2021}.  LoCo instead permits the next block's loss to
-update an overlap between adjacent blocks~\cite{xiong2020}.  \TeReL{} uses no
-negative set or predictive decoder.  It instead maintains two dense, lagged
-same-layer operators, and its main experiment obtains adjacency from labels
-rather than from an unlabeled stream.
+Predictive coding and equilibrium propagation replace ordinary
+backpropagation with local dynamics around an energy or prediction error
+~\cite{rao1999,scellier2017}. Their recurrent settling differs from the single
+explicit correction in \cref{eq:state-correction}. The correction can be
+evaluated directly in one feedforward schedule, after which both synaptic
+updates and all state recurrences are complete.
 
-\paragraph{Regularized and blockwise self-supervision.}
-VICReg and Barlow Twins avoid collapse without negatives by regularizing
-variance and covariance or cross-correlation~\cite{bardes2022,zbontar2021}.
-Such losses can train network blocks without end-to-end
-backpropagation~\cite{siddiqui2024}; layerwise VICReg has also been applied to
-pairs of original and augmented images with current-batch
-statistics~\cite{datta2025}.
-\TeReL{} instead uses temporal pairs, detached running moments, and the
-target--state construction needed for one-observation execution.
+\section{Experimental design}
+\label{sec:experiments}
 
-The positive relation itself matters.  Spectral analyses show that it can
-determine downstream geometry when it aligns with task labels
-~\cite{balestriero2022}.  Our class-chunk MNIST experiment should be
-interpreted as constructed pair supervision and compared with a label-aware
-local baseline.  It does not show that arbitrary natural adjacency reveals
-class structure.
+The evaluation tests three hypotheses. First, batch-size-one \TeReL{} should
+learn a useful deep representation despite its locality constraints. Second,
+the temporal order and each component of the regularized target should affect
+that representation. Third, continuing the same unsupervised updates along an
+evaluation stream should preserve the representation when the continuation
+step is chosen for an already trained encoder.
 
-The appendix compares the objectives, execution boundaries, and auxiliary
-storage of the nearest methods in a common table.
+\subsection{Data, selection, and readout}
 
-\section{Experimental protocol}\label{sec:protocol}
+MNIST contains $60{,}000$ training images and $10{,}000$ held-out images
+~\cite{lecun1998}. We reserve a stratified $10{,}000$-image subset of the
+training data for model selection. The remaining images train the encoder and
+a linear probe. The probe reads the concatenation of both learned layers and
+is evaluated on the held-out images. All reported central values are means and
+sample standard deviations over five independently initialized evaluations;
+paired comparisons use the same initialization indices and 95\% Student-$t$
+intervals.
 
-The experiments ask three questions.  Does samplewise \TeReL{} learn a useful,
-noncollapsed representation?  Does the residual-state mechanism improve the
-same samplewise rule without inhibition?  How does the batched relaxation
-compare with local and end-to-end baselines?
+The \TeReL{} stream consists of randomly permuted class-homogeneous chunks of
+length 16. A sequence boundary separates consecutive chunks. Class labels
+therefore determine the order, as they do in supervised contrastive sampling,
+but do not enter the target or either synaptic update. The encoder has widths
+512 and 256, uses ReLU, and receives two passes over the encoder-training
+observations: $100{,}000$ batch-size-one updates in total. The selected
+configuration, probe, split roles, and evaluation indices were fixed from
+validation results before held-out evaluation. Exact hyperparameters and raw
+values appear in \cref{app:protocol}.
 
-\subsection{Data splits and roles}
+\subsection{References and interventions}
 
-\paragraph{MNIST controlled temporal supervision.}
-We stratify the 60,000-example MNIST training split into 50,000 examples for
-fitting and 10,000 for validation.  Final accuracy is measured on the official
-held-out split.  At each encoder epoch, training examples are randomly arranged
-into same-class chunks of length 16, with a boundary at every chunk start.
-Labels determine this order but never enter a \TeReL{} objective.  The protocol
-isolates a task-aligned temporal signal and is not unlabeled self-supervision.
+The performance references are chosen to expose distinct relaxations:
+\begin{itemize}
+  \item \TeReLOffline{} uses the same $512$--$256$ architecture and final-layer
+  soft-SFA principle, with subsequences of 128 and end-to-end backpropagation;
+  \item Layer-local SupCon uses labels and a supervised contrastive objective
+  at each learned layer;
+  \item supervised offline uses labels and backpropagation through the complete
+  network, while the linear input reference applies supervised logistic
+  readout directly to the pixels;
+  \item a random $512$--$256$ ReLU encoder receives the same concatenated-layer
+  readout; and
+  \item batch SFA and incremental SFA provide classical linear slow-feature
+  references.
+\end{itemize}
+The methods differ in their intrinsic data and optimization requirements; the
+comparison therefore reports representation quality rather than equal compute.
+All downstream evaluations use the same split roles and linear-probe procedure.
 
-\paragraph{Neuron state.}
-We visualize neuron dynamics on CAPTURE-24, which records roughly 24 hours of
-wrist acceleration from each participant during daily life
-~\cite{chan2024capture24}.  Each consecutive 10-second interval is summarized
-by the mean, standard deviation, minimum, and maximum of the three axes and
-their magnitude.  The trace comprises 128 windows from one uninterrupted
-fitting segment.  We fixed the segment and randomly selected four neurons in
-the second layer before inspecting their values.  The figure illustrates
-online dynamics, not improved recognition from natural order.  Its archived
-data retain the exact interval, neuron indices, and state values.
+Four matched interventions examine \TeReL{} itself. One randomly shuffles the
+stream. Two set the temporal or variance coefficient to zero. The fourth sets
+the covariance coefficient to zero. Online continuation begins from the same
+trained parameters and the same fitted probe as fixed-encoder evaluation. Each
+representation is emitted before the current observation updates the encoder,
+so an observation can affect only later representations. The continuation
+update receives no label. A validation-only scale audit selects the largest
+continuation step that preserves fixed-encoder accuracy and effective rank.
 
-\subsection{Models, baselines, and readouts}
+\section{Results}
+\label{sec:results}
 
-All MNIST encoders have dimensions $784\rightarrow512\rightarrow256$ and use
-LeakyReLU with negative slope 0.01.  \TeReL{} trains both layers jointly, one
-sample at a time, for two data presentations.  It uses identity normalization,
-plain stochastic gradient descent with learning rate $10^{-2}$ and no momentum
-or weight decay,
-$(\lambda_S,\lambda_V,\lambda_C)=(1,2.5,1)$, $\gamma=1$, and momenta
-$\rho_\mu=\rho_A=\rho_M=0.99$.  Residual inhibition uses $\kappa=1000$, one
-lateral pass of size $0.1$, and the feature-normalized full second moment in
-\cref{eq:residual-lateral-update}.  Every sample causes one optimizer update.
-
-The matched samplewise reference omits the inhibitory pass, so $s_t=b_t$ and
-the update follows the exact detached soft-objective gradient.  This comparison
-isolates the mechanism introduced in \cref{sec:neuron-state}; architecture,
-order, normalization, optimizer, state timescales, and data presentations are
-identical.
-
-\TeReLOffline{} uses the same hidden dimensions and activation, affine
-BatchNorm, live temporal pairs within each chunk, and greedy training for 30
-epochs per layer, for 60 data presentations.  AdamW uses
-learning rate $3\times10^{-4}$, weight decay $10^{-4}$, and batch size 256.
-Its loss coefficients are $(1,2.5,1)$ and its population momentum is 0.9.
-The next minibatch uses the representation operator written by the preceding
-one.  This configuration is an optimization-rich reference, not a spatially
-or temporally matched control for \TeReL{}.
-
-The backpropagation baseline matches the \TeReLOffline{} architecture,
-normalization, optimizer, batch size, and 60 data presentations, and trains end
-to end with cross entropy.  Two random encoders separate learning from
-normalization.  One omits normalization; the other keeps all hidden and affine
-BatchNorm parameters at initialization and updates only BatchNorm running
-statistics in one fitting-split pass.  This calibration is data-dependent
-normalization, not representation learning.
-
-Local SupCon is a label-aware local comparator for the constructed stream.
-Each layer minimizes supervised contrastive loss over all same-label positives
-in its minibatch, and activations are detached between layers.  It matches the
-\TeReLOffline{} architecture, BatchNorm, batch size, 60 data presentations,
-all-layer probe, and evaluation runs.  Its learning rate and temperature are
-selected from a fixed $3\times2$ validation grid.
-
-Every primary representation is evaluated by the same linear classifier on
-the concatenation of both hidden layers.  A second probe reads only the final
-layer of the identical \TeReLOffline{} encoder.  All probes use AdamW for 60
-epochs with learning rate 0.003, weight decay $10^{-4}$, and batch size 2,048.
-
-\subsection{Model selection and evaluation separation}
-
-All selection uses the 10,000-example validation split.  The declared
-samplewise screen varies optimizer structure, learning rate, and the number of
-lateral passes, with three validation runs for the final comparisons.  It
-selects plain SGD at learning rate $10^{-2}$ and one pass; four passes differ
-by only 0.04 accuracy points, while the next two declared learning rates fail
-because they produce invalid covariance spectra.  The selected configuration is frozen before five
-predetermined final runs.  The matched no-inhibition comparison, Local SupCon grid,
-objective interventions, and direct-covariance control remain validation-only.
-No final result selects among alternative \TeReL{} configurations.
-
-\subsection{Evaluation and uncertainty}
-
-We report raw accuracies, means, sample standard deviations, and small-sample
-Student-$t$ intervals.  Contrasts are paired only when methods share the same
-runs; comparisons across independently seeded evaluation sets are descriptive.
-Effective rank, feature variance, off-diagonal correlation, nearest-centroid
-accuracy, and between/within-class scatter diagnose representation geometry.
-The supplement contains the frozen protocol, selection ledger, and raw output
-for every reported run.
-
-\section{Results}\label{sec:results}
-
-\subsection{Samplewise \TeReL{} learns a useful representation}
-
-The frozen \TeReL{} configuration attains
-$\FinalTeReLAccuracy\pm\FinalTeReLSSD$\% on held-out MNIST.  It processes one
-observation per optimizer step, sees the fitting split twice, and retains no
-temporal graph or optimizer state.  All final runs update both feedforward and
-residual-lateral matrices and remain noncollapsed.  Its mean accuracy is 1.46
-points below the independently seeded \TeReLOffline{} reference.
-
-The validation comparison changes only residual inhibition.  Accuracy is
-$95.91\pm0.11$\% with inhibition and $94.49\pm0.15$\% for the no-inhibition reference.  The
-paired gain is $1.42$ points, with 95\% Student-$t$ interval $[1.32,1.52]$.
-Effective rank is 147.0 for \TeReL{} and 140.9 for the reference; the accuracy
-gain does not come from a lower-dimensional collapse.
-
-\subsection{What the residual state changes}
-
-In the final runs, the inhibitory pass reduces the root-mean-square neuron
-state from 0.585 to 0.495 in the first layer and from 0.675 to 0.490 in the
-second.  The effect is systematic across
-runs and is largest in the deeper layer.  The residual state is therefore an
-active part of the learned dynamics, not a relabeling of the exact gradient.
-
-\Cref{fig:neuron-state-dynamics} shows the state itself on a chronological
-CAPTURE-24 segment.  The four randomly selected neurons share the same input
-interval but respond with different signs, amplitudes, and marginal
-distributions.  This is the quantity paired with presynaptic activity in the
-feedforward update and with another neuron state in the lateral update.
+\subsection{A useful representation from samplewise local updates}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\linewidth]{figures/neuron-state-dynamics.pdf}
-  \caption{Neuron state on a natural sensor stream.  \textbf{a}, State of four
-  second-layer neurons during the same 128 consecutive CAPTURE-24 observations.
-  The neurons, denoted A--D, were selected uniformly at random before the
-  traces were inspected.  \textbf{b}, Distributions over the identical
-  interval; dots mark medians and bars mark interquartile ranges.}
-  \label{fig:neuron-state-dynamics}
+  \includegraphics[width=\linewidth]{figures/performance-mechanisms.pdf}
+  \caption{\textbf{Representation quality and matched temporal effects.}
+  \textbf{a}, Held-out linear-probe accuracy. Points show means and horizontal
+  intervals show sample standard deviations. \textbf{b}, Paired accuracy
+  changes relative to fixed-encoder \TeReL{}; intervals are 95\% Student-$t$
+  intervals. Online continuation uses the validation-selected step.}
+  \label{fig:performance}
 \end{figure}
+
+\TeReL{} reaches $\FinalTeReLAccuracy\pm\FinalTeReLSD$\% held-out accuracy
+(\cref{fig:performance}a). The random encoder reaches $95.14\pm0.27$\%, giving
+a paired gain of 1.25 percentage points with interval $[0.88,1.61]$. The gain
+over a linear probe on the input is 3.94 points $[3.65,4.23]$. Batch SFA and
+incremental SFA reach $89.52\pm0.13$\% and $88.70\pm0.09$\%, respectively.
+The nonlinear depth and regularized local target therefore contribute beyond
+both the input and classical linear slow-feature references.
+
+Layer-local SupCon reaches $\FinalSupConAccuracy\pm\FinalSupConSD$\%, 0.57
+points above \TeReL{}. This comparator uses class labels, minibatches, batch
+normalization, and AdamW at every layer. The small accuracy difference is
+therefore obtained under a substantially less restrictive learning signal.
+\TeReLOffline{} reaches $\FinalOfflineAccuracy\pm\FinalOfflineSD$\%, while the
+fully supervised offline network reaches
+$\FinalSupervisedAccuracy\pm\FinalSupervisedSD$\%. Their proximity shows that
+the soft-SFA principle itself can support the supervised reference accuracy
+when subsequence and cross-layer optimization are available. The remaining
+gap to samplewise \TeReL{} is associated with the locality constraints rather
+than a weak offline objective.
+
+\subsection{Temporal order and anti-collapse terms}
+
+The temporal interventions in \cref{fig:performance}b isolate the contribution
+of adjacency. Randomly shuffling the stream lowers accuracy by 1.31 paired
+points, with interval $[0.92,1.69]$. Removing the temporal term lowers it by
+1.84 points $[1.65,2.02]$. These two changes preserve finite representations
+but remove the advantage supplied by class-consistent adjacency.
+
+The variance and covariance terms control more severe failure modes. Without
+the variance term, accuracy falls to $15.10\pm0.18$\%, and the median feature
+variance is approximately $1.4\times10^{-5}$. The effective-rank statistic is
+not informative in this limit because many coordinates retain similarly tiny
+variance. Without the covariance term, all five evaluations become non-finite
+before a representation can be measured. The three target components thus
+play distinct roles: temporal agreement improves the ordered representation,
+variance prevents a near-constant solution, and covariance stabilizes the
+multidimensional code.
+
+\subsection{Continued online updates require a post-training step size}
+
+The encoder and its causal state can continue updating along the evaluation
+stream without changing the fitted probe. Reusing the initial training step,
+however, is too aggressive after the representation has formed: a
+validation-stream diagnostic shows progressively larger losses across stream
+blocks and a sharp rank reduction. Scaling the continuation step by
+$10^{-3}$ preserves validation accuracy ($96.17$\% versus $96.18$\%) and
+effective rank ($90.41$ versus $90.01$) while retaining nonzero feedforward
+parameter change. The same scale is fixed before the held-out continuation
+comparison in \cref{fig:performance}b. Across the held-out evaluations,
+continued updates reach $96.43\pm0.15$\%, compared with
+$96.39\pm0.19$\% for the fixed encoder. The paired change is $+0.05$ points
+with interval $[-0.03,0.12]$; effective rank changes by $+0.57$
+$[-0.04,1.18]$. The mean feedforward parameter change is nonzero
+($\lVert\Delta W\rVert_2=0.047$). These results separate the ability to execute
+the rule online from the optimization schedule required after convergence.
+
+\subsection{Geometry of the learned representation}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\linewidth]{figures/mnist-performance-comparison.pdf}
-  \caption{MNIST accuracy under the controlled temporal relation.
-  \textbf{a}, Final run values and means for the samplewise method and the
-  principal batched references.  Independently seeded protocols are shown for
-  context, not paired inference.  \textbf{b}, Paired differences for methods
-  evaluated on common runs under the batched protocol.  Open circles mark
-  means; lines show 95\% Student-$t$ intervals.}
-  \label{fig:mnist-performance}
+  \includegraphics[width=0.88\linewidth]{figures/representation-geometry.pdf}
+  \caption{\textbf{Class structure in the \TeReL{} representation.}
+  \textbf{a}, A Laplacian embedding of validation-set concatenated-layer features;
+  colors denote digits and are used only for visualization.
+  \textbf{b}, The fraction of same-class neighbors measured in the complete
+  768-dimensional representation. The dotted line is the class-frequency
+  chance level.}
+  \label{fig:geometry}
 \end{figure}
 
-\subsection{The batched relaxation provides a performance reference}
+The Laplacian view in \cref{fig:geometry}a shows extended class-specific
+branches rather than a single collapsed mass. Because any two-dimensional
+projection can distort neighborhoods, \cref{fig:geometry}b measures the same
+relation in the complete representation. The nearest neighbor shares the
+digit label for $89.9$\% of observations; the fraction remains $79.7$\% across
+20 neighbors and $71.7$\% across 50, compared with a $10.0$\% class-frequency
+baseline. The linear-probe result is therefore accompanied by local class
+structure distributed through the learned feature space.
 
-\TeReLOffline{} attains $97.30\pm0.07$\% test accuracy.  The matched
-backpropagation encoder attains $98.34\pm0.08$\%; their paired gap is 1.04
-points, with interval $[0.99,1.08]$.  The BatchNorm-calibrated random encoder
-attains $95.35\pm0.19$\%, and \TeReLOffline{} improves on it by 1.95 points
-with interval $[1.64,2.25]$.  The unnormalized random encoder attains
-$95.13\pm0.27$\%.
+\subsection{TeReL's neuron state}
 
-Local SupCon attains $96.98\pm0.10$\% under the same batched protocol.
-\TeReLOffline{} is higher by 0.32 points, with paired interval $[0.13,0.52]$.
-Local SupCon uses every same-label positive in its minibatch, whereas
-\TeReLOffline{} sees only adjacent examples within each constructed chunk.  The
-small benchmark-specific difference does not establish general superiority
-over local contrastive learning.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.88\linewidth]{figures/neuron-state-behavior.pdf}
+  \caption{\textbf{Signed postsynaptic state.}
+  \textbf{a}, State trajectories of four randomly selected neurons from the
+  second layer over the same interval. \textbf{b}, Their empirical state
+  distributions over the complete validation stream; black bars mark medians.}
+  \label{fig:state}
+\end{figure}
 
-\subsection{The three objective terms have distinct roles}
+\Cref{fig:state} displays the quantity that multiplies presynaptic activity in
+\cref{eq:feedforward-factor} during continued samplewise updates on the
+validation stream. The selected neurons alternate between positive
+and negative values, so the state supports both directions of synaptic change.
+Their scales and distributions also differ substantially: some neurons respond
+through sparse excursions, whereas another carries a broader signed signal.
+This heterogeneity is hidden by a single state norm but is explicit in the
+neuron-local formulation.
 
-The validation-only mechanism study changes one factor at a time under the
-\TeReLOffline{} protocol.  Removing the temporal term reduces accuracy by 8.18
-points without collapsing effective rank.  Shuffling the class-persistent
-order reduces accuracy by 7.55 points.  Temporal coherence supplies
-the task-aligned teaching signal in this controlled experiment.
+\section{Limitations and future work}
 
-The other two terms prevent different degeneracies.  Without gated variance
-expansion, the median feature variance falls to $7.7\times10^{-5}$.  Without
-decorrelation, feature variance remains high but effective rank falls to 2.8.
-BatchNorm alone prevents neither failure.  Together, these interventions assign
-distinct empirical functions to the temporal, variance, and decorrelation terms, as
-predicted by the soft-SFA formulation.
+The present performance evidence uses a constructed MNIST order. The labels
+define adjacency but never enter a \TeReL{} target or synaptic update. Natural
+streams contain several time scales and may require a different balance among
+temporal, variance, and covariance signals; establishing such a result on
+large video or sensor streams remains the most important empirical extension.
 
-The representation operator $A$ is also an approximation rather than a hidden
-same-batch gradient.  Its preceding-minibatch direction has mean cosine
-alignment 0.76 with the same-batch direction in both layers.  Relative
-$\ell_2$ error is 0.65, and its norm is about 0.78 times the target norm.  The
-stored direction is informative but not equivalent to the same-batch gradient.
+Continued adaptation also introduces a schedule beyond initial representation
+learning. A small fixed continuation step preserves the trained code in the
+current setting, but it does not improve it. Local rules that regulate this
+step from neuron state, parameter drift, or a stability criterion would make
+training and long-term inference coincide more fully.
 
-Replacing the proxy by the exact differentiable same-batch penalty and
-matching the factor-four gradient scale gives
-$96.93\pm0.07$\% validation accuracy, compared with $97.19\pm0.09$\% for the
-measured lagged configuration.  The paired direct-minus-lagged difference is
-$-0.25$ points, with 95\% Student-$t$ interval $[-0.42,-0.08]$.  The measured
-discrepancy rules out identifying the lagged state with the exact gradient,
-while the accuracy comparison shows that the result does not require the exact
-same-batch operator.
+Finally, a layer of width $D$ uses $D^2$ auxiliary lateral parameters. This is
+comparable to the feedforward parameters of an equal-width layer and distinct
+from causal state, but it may still dominate narrow-input or very wide
+architectures. Sparse, low-rank, or structured lateral recurrences are natural
+directions for constrained physical implementations. The current experiments
+also use multilayer perceptrons; convolutional and recurrent architectures
+would test whether the same target-state construction scales while preserving
+its locality boundary.
 
-\section{Limitations}
+\section{Conclusion and outlook}
 
-The evidence uses a constructed, label-derived temporal relation.  It shows that
-the rule can exploit informative adjacency; it does not show that useful
-adjacency can be discovered without labels.  Rapid or aliased latent causes
-can make neighboring observations misleading.  Video, audio, and other
-continuous streams require direct evaluation across several independent
-sequences and timescales.
+\TeReL{} begins with a soft slow-feature objective and ends with quantities
+available at individual neurons and synapses. A detached regularized target
+defines a signed postsynaptic state. Presynaptic activity and this state give
+the feedforward gradient, while one same-layer matrix supplies an explicit
+state correction and receives an anti-Hebbian state--state contribution. The
+complete update processes one observation at a time with three causal scalars
+per neuron, one auxiliary matrix per layer, and no error signal across learned
+layers or time.
 
-Local in time does not mean small in width.  The two dense same-layer operators
-require $O(D^2)$ auxiliary parameters and communication; their use and update
-add two matrix--vector products and two rank-one products per observation.
-Sparse or low-rank operators are promising only if they preserve the
-representation gain.  The implementation
-also uses an exact activation derivative and synchronized dense linear
-algebra.  The locality claim concerns information paths; it is not a claim of
-biological realism, low energy, or efficient present-day hardware.
-
-Finally, \TeReL{} and \TeReLOffline{} differ in more than temporal
-detachment.  They use different batch sizes, normalization, schedules, and
-numbers of optimizer updates.  Their accuracy gap cannot be assigned to any
-one of these factors without a matched optimization study.  The matched
-samplewise comparison isolates residual-state inhibition; \TeReLOffline{}
-indicates the performance available after relaxing the execution constraints.
-
-\section{Conclusion}
-
-The soft-SFA objective defines more than three gradient terms: it defines a
-regularized target.  Tracking the residual to that target gives each neuron a
-state that factors the feedforward gradient and supplies both endpoints of an
-anti-Hebbian lateral update.  \TeReL{} uses this construction without an error
-path across layers or time.
-
-Under controlled MNIST adjacency, residual-state inhibition improves a matched
-samplewise reference by 1.42 points and the frozen method reaches
-$\FinalTeReLAccuracy\pm\FinalTeReLSSD$\% in final evaluation.  The batched
-relaxation reaches 97.30\%, while mechanism controls distinguish temporal
-teaching, variance support, and decorrelation in that relaxation.  These
-results establish deep slow-feature learning local in space and time for the
-controlled relation.  Whether natural temporal order supplies a useful
-learning signal remains open.
+The experiments show that this locality is compatible with a useful deep
+representation. Samplewise \TeReL{} improves on random, input-linear, and
+classical SFA references; the relaxed \TeReLOffline{} construction reaches the
+fully supervised offline result. The natural destination is continual
+representation learning on devices where observations arrive sequentially and
+global credit assignment is expensive. Extending the rule to natural temporal
+structure and adaptive long-term updates would turn the present local
+construction into a more general learning substrate for such systems.
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}
 
 \appendix
 
-\section{Extended comparisons and diagnostics}\label{app:extended-results}
+\section{Evaluation protocol and raw values}
+\label{app:protocol}
 
-\begin{table}[H]
+\Cref{tab:configuration} lists the reported configurations. Model selection
+uses only the reserved training-data validation split. The configuration,
+readout, evaluation indices, and repetitions are fixed before the held-out
+comparison; the held-out values are not used to choose among encoder variants.
+
+\begin{table}[ht]
 \centering
-\caption{Comparison with the nearest objective and execution precedents.
-Auxiliary costs exclude learned feedforward parameters.}
-\label{tab:related-comparison}
-\footnotesize
-\begin{tabular}{>{\raggedright\arraybackslash}p{0.14\linewidth}>{\raggedright\arraybackslash}p{0.16\linewidth}>{\raggedright\arraybackslash}p{0.15\linewidth}>{\raggedright\arraybackslash}p{0.18\linewidth}>{\raggedright\arraybackslash}p{0.15\linewidth}}
-\toprule
-Method & Temporal objective & Execution & Learned mapping & Extra storage\\
-\midrule
-Batch SFA & derivative minimization & batch eigensystem & linear & covariance and whitening\\
-IncSFA & derivative minimization & sample-based & linear; deep cascades possible & incremental PCA and MCA state\\
-Bio-SFA & derivative minimization & online neural dynamics & linear network in reported derivation & synaptic/dual variables\\
-Greedy InfoMax & natural-order InfoNCE & isolated modules & deep nonlinear modules & context/predictor and negatives\\
-CLAPP & causal contrastive prediction & local in depth and time & deep nonlinear layers & predictive input, modulation, negatives\\
-LoCo & paired-view contrastive & overlapping minibatch blocks & deep nonlinear blocks & projection heads and negatives\\
-Blockwise SSL & paired-view invariance & minibatch blocks & deep nonlinear blocks & batch statistics\\
-\TeReL{} & temporal soft-SFA & one observation & deep nonlinear layers & $3D$ causal scalars, one flag; $2D^2$ auxiliary parameters\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\IfFileExists{generated_residual_results.tex}{\input{generated_residual_results.tex}}{}
-\IfFileExists{generated_primary_results.tex}{\input{generated_primary_results.tex}}{}
-\IfFileExists{generated_normalization_control.tex}{\input{generated_normalization_control.tex}}{}
-\IfFileExists{generated_local_supcon_results.tex}{\input{generated_local_supcon_results.tex}}{}
-\IfFileExists{generated_mechanism_results.tex}{\input{generated_mechanism_results.tex}}{}
-
-The final-layer probe of \TeReLOffline{} attains $97.14\pm0.10$\%, 0.16 points
-below the matched all-layer probe; the paired interval $[-0.37,0.05]$ includes
-zero.  The final layer therefore retains nearly all of the mean result, though
-five runs do not resolve the small readout difference.
-
-\begin{table}[H]
-\centering
+\caption{Encoder configurations used in the reported comparison. A sample is
+one observation presented to the encoder.}
+\label{tab:configuration}
 \small
-\caption{Geometry of the MNIST representations across final runs. B/W is the
-between/within-class scatter ratio; Sel. is median unit class selectivity;
-$r_{\mathrm{eff}}$ is covariance effective rank; and
-$|\rho_{\mathrm{off}}|$ is mean absolute off-diagonal correlation.}
-\label{tab:mnist-geometry}
-\begin{tabular}{lrrrrr}
+\begin{tabularx}{\linewidth}{lYYYY}
 \toprule
-Method & Centroid (\%) & B/W & Sel. & $r_{\mathrm{eff}}$ & $|\rho_{\mathrm{off}}|$ \\
+Method & Samples & Batch or subsequence & Optimizer & Normalization \\
 \midrule
-Random, no norm. (all) & 80.21 & 0.241 & 1.239 & 33.84 & 0.101 \\
-\TeReL{} (all) & 90.58 & 0.082 & 0.833 & 142.73 & 0.058 \\
-\TeReLOffline{} (all) & 95.55 & 0.695 & 1.704 & 37.35 & 0.103 \\
-\TeReLOffline{} (last) & 96.22 & 1.516 & 2.567 & 18.86 & 0.161 \\
-BP (all) & 97.87 & 0.968 & 1.857 & 21.17 & 0.152 \\
+\TeReL{} & $100{,}000$ & $1$ & SGD & none \\
+\TeReLOffline{} & $1{,}000{,}000$ & $128$ & momentum SGD & none \\
+Layer-local SupCon & $3{,}000{,}000$ & $256$ & AdamW & BatchNorm \\
+Supervised offline & $500{,}000$ & $256$ & AdamW & none \\
+Batch SFA & $50{,}000$ & complete fit & eigensolver & whitening \\
+Incremental SFA & $50{,}000$ & $1$ & incremental & whitening \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
-\begin{table}[H]
+For \TeReL{}, the selected coefficients are
+$\lambda_T=1$, $\lambda_V=3.001981$, $\lambda_C=0.606133$,
+$\tau=1$, $\beta=0.99$, $\rho=0.995$, $\kappa=0.574950$,
+$\eta=0.1$, and $\omega=0.591110$. The learning rate is $0.0138703$ with
+coupled decay $10^{-6}$. \TeReLOffline{} uses 20 epochs, learning rate
+$0.0109437$, momentum $0.95$, decay $10^{-6}$, variance coefficient
+$2.529924$, covariance coefficient $0.0218471$, and variance target
+$0.862789$. The linear probe uses AdamW for 60 epochs with learning rate
+$0.003$, decay $10^{-4}$, and batch size 2048.
+
+\begin{table}[ht]
 \centering
+\caption{Held-out MNIST accuracy by initialization index. Values are
+fractions; a dash denotes a non-finite representation.}
+\label{tab:raw}
 \small
-\caption{Alignment of the lagged lateral direction with its same-batch target
-on validation data. Statistics average three runs and all nonzero minibatches.}
-\label{tab:lateral-audit}
-\begin{tabular}{lrrr}
+\begin{tabular}{lccccc}
 \toprule
-Layer & Cosine alignment & Relative $\ell_2$ error & Norm ratio \\
+Method & 1101 & 1202 & 1303 & 1404 & 1505 \\
 \midrule
-1 & 0.757 & 0.651 & 0.785 \\
-2 & 0.755 & 0.653 & 0.780 \\
+\TeReL{} & .9625 & .9656 & .9661 & .9618 & .9633 \\
+\TeReLOffline{} & .9842 & .9838 & .9832 & .9841 & .9841 \\
+Random encoder & .9467 & .9533 & .9513 & .9533 & .9523 \\
+Input linear probe & .9250 & .9231 & .9254 & .9250 & .9238 \\
+Supervised offline & .9816 & .9820 & .9823 & .9806 & .9819 \\
+Layer-local SupCon & .9698 & .9693 & .9714 & .9693 & .9679 \\
+Batch SFA & .8961 & .8962 & .8954 & .8929 & .8952 \\
+Incremental SFA & .8865 & .8883 & .8861 & .8876 & .8864 \\
+No temporal term & .9456 & .9465 & .9455 & .9441 & .9457 \\
+No variance term & .1495 & .1493 & .1533 & .1526 & .1504 \\
+No covariance term & -- & -- & -- & -- & -- \\
+Shuffled order & .9508 & .9474 & .9523 & .9512 & .9523 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\section{Gradient derivations}\label{app:gradients}
+\section{Locality and operation accounting}
 
-For detached $p,\mu,\sigma^2,A$, the three single-observation activation
-derivatives are
-\begin{align}
-\frac{\partial \ell_S}{\partial z_t}
-&=\frac{2I_t}{D}(z_t-p_t),\\
-\frac{\partial \ell_V}{\partial z_t}
-&=-\frac{2}{D}g\odot(z_t-\mu),\\
-\frac{\partial \ell_C}{\partial z_t}
-&=\frac{1}{D}A(z_t-\mu).
-\end{align}
-Factoring out $2\lambda_S/D$ leaves exactly $r_t$ in
-\cref{eq:activation-residual}.  Because $\hat z_t$ is detached,
-\begin{equation}
-\frac{\partial}{\partial z_t}
-\frac{\lambda_S}{D}\|z_t-\hat z_t\|^2
-=\frac{2\lambda_S}{D}r_t.
-\end{equation}
-Mapping through the activation gives $b_t=J_{\phi,t}^\top r_t$.  At zero
-residual-state coupling, $s_t=b_t$ and the preactivation target obeys
-\begin{equation}
-\frac{\partial}{\partial W}
-\frac{\lambda_S}{D}\|a_t-\stopgrad(a_t-b_t)\|^2
-=\frac{2\lambda_S}{D}b_tx_t^\top,
-\end{equation}
-which equals the chain rule for \cref{eq:terel}.  Nonzero $\kappa$ replaces
-$b_t$ by the inhibited state $s_t$ and deliberately modifies this direction.
-With an undetached temporal reference, $z_t$ also appears as the predecessor in
-pair $t+1$, yielding \cref{eq:batch-gradient}.
+For a layer of width $D$ with input width $d$, the feedforward multiplication
+costs $Dd$ multiply--accumulates. Forming the target and causal statistics is
+linear in $D$. The lateral target and state correction each use a
+$D\times D$ matrix--vector multiplication, and updating the lateral moment
+uses a rank-one outer product. The persistent quantities are summarized in
+\cref{tab:resources}; temporary activations are not persistent causal state.
 
-\TeReLOffline{} uses $h_{\mathcal B}=N_{\theta_N,\mathcal B}(a_{\mathcal B})$ and
-$z_t=\phi(h_t)$, where $N$ is training-mode BatchNorm.  Let
-$e_s=\partial L/\partial z_s$, $r_s=e_s\odot\phi'(h_s)$, and
-$J^N_{st}=\partial h_s/\partial a_t$.  Its exact same-layer chain rule is
-\begin{equation}
-u_t=\sum_{s\in\mathcal B}(J^N_{st})^\top r_s,\qquad
-\frac{\partial L}{\partial W}=\sum_tu_tx_t^\top,\qquad
-\frac{\partial L}{\partial c}=\sum_tu_t,
-\end{equation}
-with
-$\partial L/\partial\theta_N=\sum_s(\partial h_s/\partial\theta_N)^\top r_s$ for the
-affine parameters.  BatchNorm mixes examples within each coordinate; this
-expression admits no error from another learned layer.
-
-For the direct covariance control, let $Z_c$ stack centered rows and
-$C=\offdiag(Z_c^\top Z_c/B)$.  Since $C$ is symmetric,
-\begin{equation}
-\frac{\partial}{\partial Z_c}\frac{\|C\|_F^2}{D}
-=\frac{4}{BD}Z_cC,
-\end{equation}
-which is $4C(z_t-\mu)/(BD)$ in column-vector notation.  \TeReL{} replaces
-$C$ by the stored $A$ and absorbs the positive factor into $\lambda_C$.
-
-\section{Implementation-fidelity tests}\label{app:tests}
-
-The public test suite verifies the following properties:
-\begin{itemize}
-  \item equality between the soft-objective gradient and the detached target
-  gradient at zero residual-state coupling, including the variance sign and
-  temporal boundary;
-  \item the presynaptic--neuron-state outer product, one-pass inhibitory
-  correction, and use of the same detached states in the lateral
-  moment;
-  \item nonzero updates to every encoder layer and both lateral states, absence
-  of cross-layer gradients, fixed causal-state size, and release of every
-  samplewise graph;
-  \item training-split-only BatchNorm calibration that changes running buffers
-  while preserving every random-encoder weight, bias, and affine parameter;
-  \item the MNIST split roles, normalization fit only on the training split,
-  temporal boundaries, and encoder batches containing only features and
-  boundary indicators;
-  \item matched all-layer and final-layer probes, greedy layerwise scheduling,
-  execution of every declared backpropagation layer, and exact counting of data
-  presentations;
-  \item batch-SFA constraints, boundary-aware derivatives, and numerical
-  agreement of the published-algorithm IncSFA port with its reference; and
-  \item refusal to execute final evaluation after any change to the frozen
-  protocol, selection ledger, configuration, or tracked source.
-\end{itemize}
-
-\section{Reproducibility record}\label{app:reproducibility}
-
-The repository fixes Python 3.12 and all direct dependencies through
-\texttt{pyproject.toml} and \texttt{uv.lock}.  Every run enables deterministic
-PyTorch and cuDNN behavior together with the prescribed cuBLAS workspace
-configuration.  The anonymous supplement contains the selected configurations,
-selection ledger, seeds, per-seed JSON records, raw confusion matrices,
-hardware and software record, source, generated tables, and checksums.
-\texttt{ARTIFACT\_README.md} provides portable commands and the exact
-provenance identifiers.  The supplement does not redistribute dataset files.
-
-\section{Complete configurations and raw results}\label{app:raw-results}
-
-\IfFileExists{generated_residual_appendix.tex}{%
-  \input{generated_residual_appendix.tex}%
-}{%
-  Residual-state raw-result tables are generated from the frozen records.
-}
-
-\IfFileExists{generated_primary_appendix.tex}{%
-  \input{generated_primary_appendix.tex}%
-}{%
-  Primary raw-seed tables are generated from the supplied result records.
-}
-
-\IfFileExists{generated_local_supcon_appendix.tex}{%
-  \input{generated_local_supcon_appendix.tex}%
-}{%
-  Local SupCon selection and raw-seed tables are generated from supplied records.
-}
+\begin{table}[ht]
+\centering
+\caption{Persistent quantities for one \TeReL{} layer of width $D$ and input
+width $d$.}
+\label{tab:resources}
+\small
+\begin{tabular}{lll}
+\toprule
+Category & Quantity & Size \\
+\midrule
+Causal neuron state & $p,\mu,v$ and one layer-validity bit & $3D+1$ \\
+Auxiliary lateral parameters & $M$ & $D^2$ \\
+Feedforward parameters & $W,q$ & $Dd+D$ \\
+Optimizer state & none & $0$ \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \end{document}
