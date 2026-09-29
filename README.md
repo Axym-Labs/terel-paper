@@ -1,9 +1,12 @@
 # Temporal Regularized Learning paper
 
 This repository contains the TeReL manuscript and its figures. The paper
-centers the samplewise method: a detached slow-feature target defines a signed
+constructs a causal surrogate of VICReg's invariance--variance--covariance
+decomposition: temporal adjacency makes invariance a slow-feature objective,
+detached running moments replace batch statistics, and a lagged same-layer
+operator supplies the covariance signal. A detached target defines a signed
 postsynaptic neuron state, whose outer product with presynaptic activity gives
-the feedforward gradient. One same-layer matrix supplies an explicit state
+the feedforward update. The same-layer matrix also supplies one explicit state
 correction and receives an anti-Hebbian state--state contribution.
 
 The reported class-chunked MNIST encoder reaches 96.39 ± 0.19% held-out

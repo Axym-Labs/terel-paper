@@ -83,7 +83,7 @@
   % Identical stage headers establish one reading order and one type system.
   \node[number] at ($(stage-a.north west)+(0.39,-0.39)$) {a};
   \node[anchor=west,font=\small\bfseries,text=AxymInk]
-    at ($(stage-a.north west)+(0.78,-0.39)$) {Form a regularized target};
+    at ($(stage-a.north west)+(0.78,-0.39)$) {Form a causal VICReg target};
 
   \node[number] at ($(stage-b.north west)+(0.39,-0.39)$) {b};
   \node[anchor=west,font=\small\bfseries,text=AxymInk]
@@ -103,16 +103,16 @@
     ($(stage-c.north west)+(0.28,-0.77)$) --
     ($(stage-c.north east)+(-0.28,-0.77)$);
 
-  % Stage 1: three equally weighted soft-SFA contributions.
+  % Stage 1: the three terms of the causal VICReg surrogate.
   \node[row] at ($(A)+(0,1.28)$)
-    {Temporal\\[-1pt]$r_t^{\mathrm{time}}=I_t(z_t-p_t)$};
+    {Temporal invariance\\[-1pt]$r_t^{\mathrm{time}}=I_t(z_t-p_t)$};
   \node[row] at ($(A)+(0,0.37)$)
     {Variance\\[-1pt]
-     $r_t^{\mathrm{var}}=-\dfrac{\lambda_V}{\lambda_S}
+     $r_t^{\mathrm{var}}=-\dfrac{\lambda_V}{\lambda_T}
        g_t\odot(z_t-\mu_t)$};
   \node[row] at ($(A)+(0,-0.54)$)
     {Covariance\\[-1pt]
-     $r_t^{\mathrm{cov}}=\dfrac{\lambda_C}{2\lambda_S}
+     $r_t^{\mathrm{cov}}=\dfrac{\lambda_C}{2\lambda_T}
        \operatorname{offdiag}(M_t)(z_t-\mu_t)$};
   \node[result] (target) at ($(A)+(0,-1.78)$)
     {$r_t=r_t^{\mathrm{time}}+r_t^{\mathrm{var}}+r_t^{\mathrm{cov}}$\\[-1pt]

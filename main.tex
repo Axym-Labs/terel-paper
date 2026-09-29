@@ -19,7 +19,7 @@
 Local in Space and Time}
 \publicationauthors{Davide Wiest}
 \publicationaffiliations{Department of Computer Science, TU Darmstadt; Independent Researcher\\Darmstadt, Germany}
-\publicationdate{August 2026}
+\publicationdate{September 2026}
 \publicationcode{https://github.com/Axym-Labs/TeReL}
 \publicationpaper{https://doi.org/10.5281/zenodo.18673107}
 \publicationcorrespondence{dw@axym.org}
@@ -39,31 +39,32 @@ Local in Space and Time}
 
 \providecommand{\LeadFigurePath}{figures/terel-method-overview.pdf}
 \providecommand{\LeadFigureCaption}{%
-\TeReL{} turns a soft slow-feature objective into local synaptic quantities.
-\textbf{a}, Three regularizers form a detached activation target.
-\textbf{b}, Its exact ReLU residual becomes a postsynaptic neuron state after
-one same-layer correction. \textbf{c}, A feedforward synapse receives the
-presynaptic value and this neuron state; one lateral matrix accumulates
-representation and state second moments. Each learned layer completes these
-three steps before passing a detached activation to the next layer.}
+\TeReL{} in one layer. \textbf{a}, A causal VICReg surrogate forms the target.
+\textbf{b}, Its residual and one lateral correction define neuron state.
+\textbf{c}, Synapses update from endpoint quantities before output detachment.}
 
 \begin{document}
 
 \makepublicationtitle
 
 \publicationabstract{%
-Slow Feature Analysis learns representations that vary slowly without
-collapsing or duplicating coordinates. Applying this objective to a deep
-network usually introduces credit assignment across layers, observations, or
-both. Temporal Regularized Learning (\TeReL{}) instead constructs a detached
-regularized target at every layer and maps the target residual to the state of
-each neuron. The feedforward gradient then factors into a presynaptic value
-and this postsynaptic state. A single lateral matrix corrects the state once
-and receives an anti-Hebbian state--state contribution. The resulting encoder
-processes one observation at a time, sends no error signal across learned
-layers or time, and stores three causal scalars per neuron together with one
-matrix of auxiliary lateral parameters per layer. On a class-chunked MNIST stream,
-batch-size-one training with stochastic gradient descent reaches
+VICReg organizes noncontrastive representation learning around invariance,
+marginal variance, and cross-coordinate covariance. Its usual batch statistics
+and two-view computation do not directly yield a causal, neuron-local update.
+Temporal Regularized Learning (\TeReL{}) converts this decomposition into a
+causal surrogate: adjacent observations form the positive pair, detached running
+moments replace batch statistics, and a lagged same-layer operator supplies a
+covariance signal. Temporal adjacency turns invariance into slowness, making
+the construction a soft form of Slow Feature Analysis. We show that detaching
+historical quantities truncates cross-time credit assignment without removing
+the current-observation gradient. At each layer, a detached regularized target
+maps its residual to the state of each neuron. The feedforward update then
+factors into a presynaptic value and this postsynaptic state; one lateral matrix
+corrects the state once and receives an anti-Hebbian state--state contribution.
+The resulting encoder processes one observation at a time, sends no error
+signal across learned layers or time, and stores three causal scalars per neuron
+together with one matrix of auxiliary lateral parameters per layer. On a
+class-chunked MNIST stream, batch-size-one stochastic-gradient training reaches
 $\FinalTeReLAccuracy\pm\FinalTeReLSD$\% held-out linear-probe accuracy. Random
 features reach $95.14\pm0.27$\%, and a layer-local supervised contrastive
 network reaches $\FinalSupConAccuracy\pm\FinalSupConSD$\%. A spatially and
@@ -71,24 +72,25 @@ temporally relaxed reference, \TeReLOffline{}, reaches
 $\FinalOfflineAccuracy\pm\FinalOfflineSD$\%. Shuffling the stream or removing
 the temporal term reduces accuracy. Removing variance control produces a
 nearly constant representation, whereas removing covariance control causes
-numerical failure. Continued
-unlabeled updates preserve held-out accuracy when their step size is selected
-for a trained representation. Together, these results establish a simple deep
-slow-feature rule for online and memory-constrained learning.}
+numerical failure. Continued unlabeled updates preserve held-out accuracy when
+their step size is selected for a trained representation. These results support
+a deep, local realization of regularized temporal representation learning.}
 
 \publicationleadfigure[0.285\textheight]{\LeadFigurePath}{\LeadFigureCaption}
 \label{fig:overview}
 
 \section{Introduction}
 
-Temporal continuity supplies a learning signal before a task label is known.
-When consecutive observations share a slowly changing cause, a representation
-can suppress incidental variation by remaining close across time. Slow Feature
-Analysis (SFA) formalizes this principle while preventing the constant solution
-through variance and decorrelation constraints~\cite{wiskott2002}. Closely
-related temporal-coherence objectives have long been used to learn visual
-invariances~\cite{foldiak1991}, and modern self-supervised objectives likewise
-combine agreement with variance or redundancy control~\cite{oord2018,zbontar2021,bardes2022}.
+Representation learning needs both a relation that should be preserved and a
+mechanism that prevents collapse. VICReg separates these roles into invariance
+between paired views, marginal variance, and cross-coordinate covariance
+control~\cite{bardes2022}. If the paired views are consecutive observations,
+invariance becomes slowness. The resulting combination is a soft form of Slow
+Feature Analysis (SFA): temporal continuity supplies the learning signal, while
+variance and decorrelation exclude constant or duplicated coordinates
+~\cite{wiskott2002}. Temporal-coherence objectives have long used this relation
+to learn visual invariances~\cite{foldiak1991}; VICReg provides a modern
+representation-learning decomposition of three closely related roles.
 
 The optimization mechanism matters when observations arrive as a stream.
 Backpropagation through a sequence retains an activation graph across time;
@@ -97,20 +99,23 @@ layers~\cite{rumelhart1986}. Predictive-coding and equilibrium formulations can
 replace that graph with repeated neural dynamics, but then require iterative
 settling~\cite{rao1999,scellier2017}. Both choices complicate continual
 operation on hardware whose memory, communication, or update schedule is
-constrained~\cite{indiveri2015,davies2018}. A learning rule local in time should
-read only bounded detached state. A rule local in space should update a
-synapse from quantities available at its two endpoints and within its layer.
+constrained~\cite{indiveri2015,davies2018}. Here, \emph{local in time} means
+that the current gradient reads only the current observation and fixed-size
+detached quantities: it never differentiates through the history that produced
+them. A rule local in space should update a synapse from quantities available
+at its two endpoints and within its layer.
 
 Hebbian and anti-Hebbian networks give spatially local learning a useful
 algebra: similarity-matching objectives yield Hebbian feedforward and
-anti-Hebbian lateral rules for linear
-representations~\cite{pehlevan2015,pehlevan2018}. A deep slow-feature rule
-requires a richer
-postsynaptic quantity: each neuron must combine temporal attraction, variance
-preservation, and decorrelation before its synapses change. We construct this
-quantity directly from a regularized target. For every observation and every
-layer, the target residual is mapped through the local activation derivative
-and corrected once by a same-layer matrix. The resulting signed value is the
+anti-Hebbian lateral rules for linear representations
+~\cite{pehlevan2015,pehlevan2018}. We seek the corresponding nonlinear rule for
+the invariance--variance--covariance decomposition. Adjacent activations replace
+paired augmented views, detached running moments replace batch statistics, and
+a lagged same-layer operator supplies a covariance-gradient proxy. These
+substitutions define a causal VICReg surrogate, not the original batch loss.
+They produce a regularized target whose residual combines temporal attraction,
+variance preservation, and decorrelation. Mapping that residual through the
+local activation derivative and one same-layer correction gives the signed
 neuron state used by both feedforward and lateral plasticity.
 
 This construction yields \TeReL{}, a deep nonlinear encoder trained one
@@ -135,9 +140,11 @@ temporal order and each regularizer affect the learned representation.
 
 The paper makes three contributions:
 \begin{enumerate}
-  \item a regularized activation target whose ReLU preactivation residual is a
-  neuron-local postsynaptic state;
-  \item a batch-size-one deep learning rule with Hebbian-factor feedforward
+  \item a causal construction of VICReg's three-part decomposition in which temporal
+  adjacency yields soft SFA, together with a precise account of the
+  current-observation gradient retained under stop-gradient operations;
+  \item a regularized activation target whose ReLU preactivation residual gives
+  a neuron-local postsynaptic state, producing Hebbian-factor feedforward
   gradients, an anti-Hebbian lateral contribution, one explicit same-layer
   correction, and one auxiliary matrix per layer; and
   \item a prespecified comparison with optimization-rich, supervised, random,
@@ -147,7 +154,7 @@ The paper makes three contributions:
 \section{Temporal Regularized Learning}
 \label{sec:method}
 
-\subsection{One observation at one layer}
+\subsection{One observation and a causal VICReg construction}
 
 Consider observation $t$ at a layer with input $x_t\in\mathbb R^d$ and width
 $D$. The layer computes
@@ -165,7 +172,14 @@ gradient calculation. Let $I_t\in\{0,1\}$ indicate whether $p_t$ belongs to
 the same sequence, and write $\bar z_t=z_t-\mu_t$ and
 $g_t=[\tau-v_t]_+$ for a variance target $\tau>0$.
 
-The samplewise surrogate contains temporal, variance, and covariance terms:
+VICReg decomposes its objective schematically as
+$\mathcal L_{\mathrm{VICReg}}=\lambda_I\mathcal L_I+
+\lambda_V\mathcal L_V+\lambda_C\mathcal L_C$, where the terms enforce
+invariance between paired views, marginal dispersion, and cross-coordinate
+decorrelation~\cite{bardes2022}. We preserve these roles while replacing the
+second view by $p_t$, batch moments by the detached $\mu_t,v_t$, and the
+differentiated batch-covariance signal by the lagged operator
+$A_t=\offdiag(M_t)$. This gives the samplewise terms
 \begin{equation}
 \ell_T=\frac{I_t}{D}\lVert z_t-p_t\rVert_2^2
 \quad
@@ -183,18 +197,54 @@ The third applies a lagged same-layer decorrelation signal. Detachment makes
 each term a function of the current activation and bounded stored quantities,
 without a graph through earlier observations.
 
+This is a causal surrogate of the VICReg decomposition rather than a scalar
+re-expression of its batch objective. In particular, $\ell_V$ is a gated
+instantaneous expansion surrogate, and $A_t$ is a lagged covariance-gradient
+proxy. We call an update \emph{causal in credit assignment} when its gradient
+at time $t$ depends only on the current observation, current layer parameters,
+and fixed-size detached quantities computed from earlier observations. Their
+retained size may depend on layer width but not on stream length. This is the
+precise sense in which the rule is local in time.
+
+\begin{proposition}[Causal surrogate and current learning signal]
+\label{prop:causal-vicreg}
+For fixed $p_t,\mu_t,v_t,M_t$, and $I_t$, the derivative of the weighted
+surrogate is
+\begin{equation}
+  \nabla_{z_t}\ell=\frac{2\lambda_T}{D}r_t,
+  \qquad
+  r_t=I_t(z_t-p_t)-\frac{\lambda_V}{\lambda_T}g_t\odot\bar z_t
+       +\frac{\lambda_C}{2\lambda_T}A_t\bar z_t.
+  \label{eq:causal-vicreg-gradient}
+\end{equation}
+It is therefore causal in credit assignment. Before the same-layer state
+correction, its feedforward gradient is
+$2\lambda_T(J_{\phi,t}^{\top}r_t)x_t^\top/D$. Detachment thus preserves a
+current-observation learning signal whenever $x_t\neq0$ and
+$J_{\phi,t}^{\top}r_t\neq0$.
+\end{proposition}
+
+\begin{proof}
+The detached quantities are constants for differentiation. The derivatives of
+the temporal, variance, and covariance terms are respectively
+$2\lambda_T I_t(z_t-p_t)/D$,
+$-2\lambda_V g_t\odot\bar z_t/D$, and
+$\lambda_C A_t\bar z_t/D$. Their sum gives
+\cref{eq:causal-vicreg-gradient}; the chain rule gives the feedforward outer
+product. An outer product of two nonzero vectors is nonzero.
+\end{proof}
+
 \subsection{The regularized target precedes the neuron state}
 
-The three derivatives can be collected before a synapse is updated. Define
-\begin{align}
-r_t^{T}&=I_t(z_t-p_t),
-&r_t^{V}&=-\frac{\lambda_V}{\lambda_T}g_t\odot\bar z_t,
-&r_t^{C}&=\frac{\lambda_C}{2\lambda_T}A_t\bar z_t,
-\label{eq:residual-components}\\
-r_t&=r_t^{T}+r_t^{V}+r_t^{C},
-&\widehat z_t&=\stopgrad(z_t-r_t).
+Let $r_t^T,r_t^V,r_t^C$ denote, in order, the temporal, variance, and
+covariance addends in \cref{eq:causal-vicreg-gradient}. The three derivatives
+can then be collected before a synapse is updated:
+\begin{equation}
+r_t=r_t^{T}+r_t^{V}+r_t^{C},
+\qquad
+\widehat z_t=\stopgrad(z_t-r_t).
 \label{eq:regularized-target}
-\end{align}
+\end{equation}
 Thus $\widehat z_t$ is the activation preferred by the instantaneous balance
 of slowness, variance, and decorrelation. It is formed within the layer; it is
 not an external target.
@@ -211,14 +261,8 @@ has the same derivative with respect to $z_t$ as $\ell$.
 \end{proposition}
 
 \begin{proof}
-The stored $p_t,\mu_t,v_t$, and $M_t$ are constants for differentiation.
-Consequently,
-\begin{align*}
-\nabla_{z_t}(\lambda_T\ell_T)&=\frac{2\lambda_T}{D}r_t^T,&
-\nabla_{z_t}(\lambda_V\ell_V)&=\frac{2\lambda_T}{D}r_t^V,&
-\nabla_{z_t}(\lambda_C\ell_C)&=\frac{2\lambda_T}{D}r_t^C.
-\end{align*}
-Their sum is $2\lambda_T r_t/D$. Since
+By \cref{prop:causal-vicreg}, the derivative of $\ell$ is
+$2\lambda_T r_t/D$. Since
 $z_t-\widehat z_t=r_t$ at the construction point and the target is detached,
 \cref{eq:activation-target-loss} has the same derivative.
 \end{proof}
@@ -273,7 +317,7 @@ signal crosses the layer boundary.
 \subsection{One lateral matrix and bounded causal state}
 
 The same matrix supports the covariance signal in
-\cref{eq:residual-components} and the state correction in
+\cref{eq:causal-vicreg-gradient} and the state correction in
 \cref{eq:state-correction}. After the synaptic update, form
 \begin{equation}
   Q_t=(1-\omega)\offdiag(\bar z_t\bar z_t^\top)
@@ -335,19 +379,24 @@ nonlinear regularized target at each layer.
 Modern self-supervised methods also prevent invariant representations from
 collapsing. Contrastive predictive coding uses temporal context and negative
 examples~\cite{oord2018}; Barlow Twins and VICReg instead regulate variance and
-cross-coordinate dependence~\cite{zbontar2021,bardes2022}. \TeReL{} uses a
-samplewise soft-SFA analogue of these three forces. Its focus is the execution
-of the resulting update with bounded temporal state, not a new large-batch
-self-supervised loss.
+cross-coordinate dependence~\cite{zbontar2021,bardes2022}. \TeReL{} gives the
+VICReg decomposition a causal temporal realization: adjacent observations
+provide invariance, running moments gate expansion, and a lagged operator
+approximates the covariance signal. This construction is a soft-SFA rule
+because its positive relation is temporal adjacency. It is not proposed as a
+new large-batch loss or as scalar-equivalent to VICReg.
 
 Layer-local representation learning blocks the backward path between network
-modules~\cite{lowe2019,xiong2020,illing2021,siddiqui2024}. The Layer-local
-Supervised Contrastive (Layer-local SupCon) comparator in our experiments
-trains each layer with a supervised contrastive objective derived from
-\citet{khosla2020}. It removes cross-layer credit assignment but still uses
-labels, minibatches, adaptive optimizer state, and batch normalization.
-\TeReL{} instead constructs its target from temporal and same-layer state and
-processes one observation per update.
+modules~\cite{lowe2019,xiong2020,illing2021,siddiqui2024}; VICReg losses have
+also been applied independently at successive layers~\cite{datta2025}. Prior
+work therefore establishes that placing VICReg losses at separate depths is not
+itself new. \TeReL{} instead supplies the three signals causally along time and
+factors them into neuron-local updates. The Layer-local Supervised Contrastive
+(Layer-local SupCon) comparator trains each layer with a supervised contrastive
+objective derived from \citet{khosla2020}. It removes cross-layer credit
+assignment but still uses labels, minibatches, adaptive optimizer state, and
+batch normalization. \TeReL{} instead constructs its target from temporal and
+same-layer quantities and processes one observation per update.
 
 Predictive coding and equilibrium propagation replace ordinary
 backpropagation with local dynamics around an energy or prediction error
@@ -557,23 +606,33 @@ its locality boundary.
 
 \section{Conclusion and outlook}
 
-\TeReL{} begins with a soft slow-feature objective and ends with quantities
-available at individual neurons and synapses. A detached regularized target
-defines a signed postsynaptic state. Presynaptic activity and this state give
-the feedforward gradient, while one same-layer matrix supplies an explicit
-state correction and receives an anti-Hebbian state--state contribution. The
-complete update processes one observation at a time with three causal scalars
-per neuron, one auxiliary matrix per layer, and no error signal across learned
-layers or time.
+\TeReL{} begins with the invariance--variance--covariance decomposition of
+VICReg and makes three causal substitutions: adjacent observations for paired
+views, detached running moments for batch statistics, and a lagged same-layer
+operator for the covariance signal. Because the positive relation is temporal
+adjacency, invariance becomes slowness and the resulting mechanism is soft SFA.
+The stop-gradients truncate historical credit assignment while preserving the
+current-observation gradient under the conditions in
+\cref{prop:causal-vicreg}.
+
+A detached regularized target maps that gradient to a signed postsynaptic
+state. Presynaptic activity and this state give the feedforward update, while
+one same-layer matrix supplies an explicit state correction and receives an
+anti-Hebbian state--state contribution. The complete rule processes one
+observation at a time with three causal scalars per neuron, one auxiliary matrix
+per layer, and no error signal across learned layers or time.
 
 The experiments show that this locality is compatible with a useful deep
 representation. Samplewise \TeReL{} improves on random, input-linear, and
 classical SFA references; the relaxed \TeReLOffline{} construction reaches the
-fully supervised offline result. The natural destination is continual
-representation learning on devices where observations arrive sequentially and
-global credit assignment is expensive. Extending the rule to natural temporal
-structure and adaptive long-term updates would turn the present local
-construction into a more general learning substrate for such systems.
+fully supervised offline result. These properties suit continual representation
+learning on devices where observations arrive sequentially and global credit
+assignment is expensive. The derivation also separates the regularized
+representation mechanism from the relation used to construct positive pairs.
+SFA is its temporal specialization; other locally available relations could
+support different causal representation learners. That possibility remains an
+outlook rather than an empirical claim. The immediate tests are natural
+temporal structure and adaptive long-term updates.
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}
