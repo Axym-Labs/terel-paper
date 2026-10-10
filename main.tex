@@ -15,10 +15,10 @@
 \setlength{\emergencystretch}{3em}
 \setlist{nosep,leftmargin=1.35em}
 
-\publicationtitle{Temporal Regularized Learning: Deep Slow-Feature Learning
+\publicationtitle{Temporal Regularized Learning: Self-Supervised Learning
 Local in Space and Time}
 \publicationauthors{Davide Wiest}
-\publicationaffiliations{Department of Computer Science, TU Darmstadt; Independent Researcher\\Darmstadt, Germany}
+\publicationaffiliations{Department of Computer Science, TU Darmstadt\\Darmstadt, Germany}
 \publicationdate{September 2026}
 \publicationcode{https://github.com/Axym-Labs/TeReL}
 \publicationpaper{https://doi.org/10.5281/zenodo.18673107}
@@ -73,10 +73,9 @@ $\FinalOfflineAccuracy\pm\FinalOfflineSD$\%. Shuffling the stream or removing
 the temporal term reduces accuracy. Removing variance control produces a
 nearly constant representation, whereas removing covariance control causes
 numerical failure. Continued unlabeled updates preserve held-out accuracy when
-their step size is selected for a trained representation. These results support
-a deep, local realization of regularized temporal representation learning.}
+their step size is selected for a trained representation.}
 
-\publicationleadfigure[0.285\textheight]{\LeadFigurePath}{\LeadFigureCaption}
+\publicationleadfigure[0.26\textheight]{\LeadFigurePath}{\LeadFigureCaption}
 \label{fig:overview}
 
 \section{Introduction}
@@ -87,10 +86,8 @@ between paired views, marginal variance, and cross-coordinate covariance
 control~\cite{bardes2022}. If the paired views are consecutive observations,
 invariance becomes slowness. The resulting combination is a soft form of Slow
 Feature Analysis (SFA): temporal continuity supplies the learning signal, while
-variance and decorrelation exclude constant or duplicated coordinates
-~\cite{wiskott2002}. Temporal-coherence objectives have long used this relation
-to learn visual invariances~\cite{foldiak1991}; VICReg provides a modern
-representation-learning decomposition of three closely related roles.
+variance and decorrelation exclude constant or duplicated coordinates~\cite{wiskott2002}. Temporal-coherence objectives have long used this relation
+to learn visual invariances~\cite{foldiak1991}.
 
 The optimization mechanism matters when observations arrive as a stream.
 Backpropagation through a sequence retains an activation graph across time;
@@ -100,15 +97,14 @@ replace that graph with repeated neural dynamics, but then require iterative
 settling~\cite{rao1999,scellier2017}. Both choices complicate continual
 operation on hardware whose memory, communication, or update schedule is
 constrained~\cite{indiveri2015,davies2018}. Here, \emph{local in time} means
-that the current gradient reads only the current observation and fixed-size
-detached quantities: it never differentiates through the history that produced
-them. A rule local in space should update a synapse from quantities available
-at its two endpoints and within its layer.
+that the current gradient depends only on the current observation and
+fixed-size detached quantities, never on a graph through the history that
+produced them. \emph{Local in space} means that a synapse is updated from
+quantities available at its two endpoints and within its layer.
 
 Hebbian and anti-Hebbian networks give spatially local learning a useful
 algebra: similarity-matching objectives yield Hebbian feedforward and
-anti-Hebbian lateral rules for linear representations
-~\cite{pehlevan2015,pehlevan2018}. We seek the corresponding nonlinear rule for
+anti-Hebbian lateral rules for linear representations~\cite{pehlevan2015,pehlevan2018}. We seek the corresponding nonlinear rule for
 the invariance--variance--covariance decomposition. Adjacent activations replace
 paired augmented views, detached running moments replace batch statistics, and
 a lagged same-layer operator supplies a covariance-gradient proxy. These
@@ -125,10 +121,10 @@ product of presynaptic activity and the postsynaptic neuron state. One lateral
 matrix serves both target decorrelation and state correction; its state--state
 component is anti-Hebbian under the inhibitory sign convention. Running
 moments, lateral parameters, and feedforward weights follow fixed-size leaky
-recurrences. No optimizer moments are required by the reported online rule.
+recurrences, and the online rule uses plain SGD without optimizer moments.
 
-The empirical study separates the locality result from the performance made
-available by relaxing it. \TeReL{} uses batch size one and two passes over the
+The experiments compare this local rule with a reference that relaxes both
+locality constraints. \TeReL{} uses batch size one and two passes over the
 training observations. \TeReLOffline{} retains a subsequence, evaluates the
 soft-SFA loss only at the final layer, and backpropagates through both depth and
 the subsequence. On MNIST, \TeReL{} improves over random features, a linear
@@ -144,10 +140,10 @@ The paper makes three contributions:
   adjacency yields soft SFA, together with a precise account of the
   current-observation gradient retained under stop-gradient operations;
   \item a regularized activation target whose ReLU preactivation residual gives
-  a neuron-local postsynaptic state, producing Hebbian-factor feedforward
-  gradients, an anti-Hebbian lateral contribution, one explicit same-layer
+  a neuron-local postsynaptic state, producing feedforward gradients with
+  Hebbian two-factor structure, an anti-Hebbian lateral contribution, one explicit same-layer
   correction, and one auxiliary matrix per layer; and
-  \item a prespecified comparison with optimization-rich, supervised, random,
+  \item a prespecified comparison with relaxed-locality, supervised, random,
   and classical SFA references, plus matched mechanism tests.
 \end{enumerate}
 
@@ -181,12 +177,11 @@ second view by $p_t$, batch moments by the detached $\mu_t,v_t$, and the
 differentiated batch-covariance signal by the lagged operator
 $A_t=\offdiag(M_t)$. This gives the samplewise terms
 \begin{equation}
-\ell_T=\frac{I_t}{D}\lVert z_t-p_t\rVert_2^2
-\quad
-\ell_V=-\frac1D g_t^\top(\bar z_t\odot\bar z_t)
-\quad
-\ell_C=\frac1D\bar z_t^\top A_t\stopgrad(\bar z_t),
-\qquad A_t=\offdiag(M_t).
+\ell_T=\frac{I_t}{D}\lVert z_t-p_t\rVert_2^2,
+\qquad
+\ell_V=-\frac1D g_t^\top(\bar z_t\odot\bar z_t),
+\qquad
+\ell_C=\frac1D\bar z_t^\top A_t\stopgrad(\bar z_t).
 \label{eq:local-losses}
 \end{equation}
 The layer minimizes
@@ -371,8 +366,7 @@ normalization and decorrelation constraints~\cite{wiskott2002}. Incremental
 SFA adapts the classical linear construction to streams but retains a
 whitening stage and linear feature extraction~\cite{kompella2012}. Other local
 networks derive linear slow-feature or similarity-matching algorithms with
-Hebbian feedforward and anti-Hebbian lateral plasticity
-~\cite{lipshutz2020,pehlevan2015,pehlevan2018}. \TeReL{} retains this synaptic
+Hebbian feedforward and anti-Hebbian lateral plasticity~\cite{lipshutz2020,pehlevan2015,pehlevan2018}. \TeReL{} retains this synaptic
 factorization while making the postsynaptic factor the signed residual of a
 nonlinear regularized target at each layer.
 
@@ -382,25 +376,29 @@ examples~\cite{oord2018}; Barlow Twins and VICReg instead regulate variance and
 cross-coordinate dependence~\cite{zbontar2021,bardes2022}. \TeReL{} gives the
 VICReg decomposition a causal temporal realization: adjacent observations
 provide invariance, running moments gate expansion, and a lagged operator
-approximates the covariance signal. This construction is a soft-SFA rule
-because its positive relation is temporal adjacency. It is not proposed as a
-new large-batch loss or as scalar-equivalent to VICReg.
+approximates the covariance signal.
+Vectors and matrices that are computed from parameters or activations but held
+constant with respect to the parameters being optimized are commonly used in
+training objectives, such as weight-averaged teacher
+parameters~\cite{tarvainen2017}, stop-gradient target
+projections~\cite{grill2020,chenhe2021}, predictions of an earlier
+model~\cite{li2016}, and importance matrices in continual
+learning~\cite{kirkpatrick2017,wiest2026iewc}. \TeReL{} strongly relies on
+this design pattern through its leaky variance and covariance estimators.
 
 Layer-local representation learning blocks the backward path between network
 modules~\cite{lowe2019,xiong2020,illing2021,siddiqui2024}; VICReg losses have
-also been applied independently at successive layers~\cite{datta2025}. Prior
-work therefore establishes that placing VICReg losses at separate depths is not
-itself new. \TeReL{} instead supplies the three signals causally along time and
+also been applied independently at successive layers~\cite{datta2025}. Placing
+VICReg losses at separate depths is therefore not itself new. \TeReL{} instead supplies the three signals causally along time and
 factors them into neuron-local updates. The Layer-local Supervised Contrastive
 (Layer-local SupCon) comparator trains each layer with a supervised contrastive
 objective derived from \citet{khosla2020}. It removes cross-layer credit
 assignment but still uses labels, minibatches, adaptive optimizer state, and
-batch normalization. \TeReL{} instead constructs its target from temporal and
+batch normalization. By contrast, \TeReL{} constructs its target from temporal and
 same-layer quantities and processes one observation per update.
 
 Predictive coding and equilibrium propagation replace ordinary
-backpropagation with local dynamics around an energy or prediction error
-~\cite{rao1999,scellier2017}. Their recurrent settling differs from the single
+backpropagation with local dynamics around an energy or prediction error~\cite{rao1999,scellier2017}. Their recurrent settling differs from the single
 explicit correction in \cref{eq:state-correction}. The correction can be
 evaluated directly in one feedforward schedule, after which both synaptic
 updates and all state recurrences are complete.
@@ -417,8 +415,7 @@ step is chosen for an already trained encoder.
 
 \subsection{Data, selection, and readout}
 
-MNIST contains $60{,}000$ training images and $10{,}000$ held-out images
-~\cite{lecun1998}. We reserve a stratified $10{,}000$-image subset of the
+MNIST contains $60{,}000$ training images and $10{,}000$ held-out images~\cite{lecun1998}. We reserve a stratified $10{,}000$-image subset of the
 training data for model selection. The remaining images train the encoder and
 a linear probe. The probe reads the concatenation of both learned layers and
 is evaluated on the held-out images. All reported central values are means and
@@ -491,8 +488,8 @@ both the input and classical linear slow-feature references.
 
 Layer-local SupCon reaches $\FinalSupConAccuracy\pm\FinalSupConSD$\%, 0.57
 points above \TeReL{}. This comparator uses class labels, minibatches, batch
-normalization, and AdamW at every layer. The small accuracy difference is
-therefore obtained under a substantially less restrictive learning signal.
+normalization, and AdamW at every layer, so its 0.57-point advantage comes
+with a substantially less restrictive learning signal.
 \TeReLOffline{} reaches $\FinalOfflineAccuracy\pm\FinalOfflineSD$\%, while the
 fully supervised offline network reaches
 $\FinalSupervisedAccuracy\pm\FinalSupervisedSD$\%. Their proximity shows that
@@ -534,8 +531,8 @@ continued updates reach $96.43\pm0.15$\%, compared with
 $96.39\pm0.19$\% for the fixed encoder. The paired change is $+0.05$ points
 with interval $[-0.03,0.12]$; effective rank changes by $+0.57$
 $[-0.04,1.18]$. The mean feedforward parameter change is nonzero
-($\lVert\Delta W\rVert_2=0.047$). These results separate the ability to execute
-the rule online from the optimization schedule required after convergence.
+($\lVert\Delta W\rVert_2=0.047$). The rule therefore runs online after training,
+provided its step size is reduced once the representation has formed.
 
 \subsection{Geometry of the learned representation}
 
@@ -630,9 +627,19 @@ learning on devices where observations arrive sequentially and global credit
 assignment is expensive. The derivation also separates the regularized
 representation mechanism from the relation used to construct positive pairs.
 SFA is its temporal specialization; other locally available relations could
-support different causal representation learners. That possibility remains an
-outlook rather than an empirical claim. The immediate tests are natural
-temporal structure and adaptive long-term updates.
+support different causal representation learners. The immediate next steps
+are natural temporal streams and adaptive long-term updates.
+
+\section*{AI Use Statement}
+
+The original \TeReL{} framework and initial manuscript predate the
+generative-AI assistance disclosed here. Generative AI tools were used to assist
+with revision planning; theoretical and experimental development;
+implementation and experiment execution; analysis and interpretation; figure
+creation; literature search and synthesis; and manuscript drafting and editing.
+The author reviewed AI-assisted code, experimental outputs, numerical claims,
+citations, figures, and text against saved artifacts and executable code, and
+takes responsibility for the final content.
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}
