@@ -28,14 +28,14 @@ Local in Space and Time}
 \newcommand{\TeReLOffline}{\TeReL{}-Offline}
 \newcommand{\stopgrad}{\operatorname{sg}}
 \newcommand{\offdiag}{\operatorname{offdiag}}
-\newcommand{\FinalTeReLAccuracy}{96.39}
-\newcommand{\FinalTeReLSD}{0.19}
-\newcommand{\FinalOfflineAccuracy}{98.39}
+\newcommand{\FinalTeReLAccuracy}{96.48}
+\newcommand{\FinalTeReLSD}{0.15}
+\newcommand{\FinalOfflineAccuracy}{98.41}
 \newcommand{\FinalOfflineSD}{0.04}
 \newcommand{\FinalSupConAccuracy}{96.95}
-\newcommand{\FinalSupConSD}{0.13}
-\newcommand{\FinalSupervisedAccuracy}{98.17}
-\newcommand{\FinalSupervisedSD}{0.07}
+\newcommand{\FinalSupConSD}{0.17}
+\newcommand{\FinalSupervisedAccuracy}{98.44}
+\newcommand{\FinalSupervisedSD}{0.09}
 
 
 \providecommand{\LeadFigurePath}{figures/terel-method-overview.pdf}
@@ -69,7 +69,7 @@ leaky integrators (exponential moving averages). On a
 class-chunked MNIST stream, a two-layer fully connected network trained by
 \TeReL{} with batch size one outperforms random features in held-out
 linear-probe accuracy ($\FinalTeReLAccuracy\pm\FinalTeReLSD$\% versus
-$95.14\pm0.27$\%) as well as classical SFA. \TeReLOffline{}, which relaxes
+$95.09\pm0.23$\%) as well as classical SFA. \TeReLOffline{}, which relaxes
 both locality constraints within a subsequence, is comparable to supervised
 backpropagation ($\FinalOfflineAccuracy\pm\FinalOfflineSD$\% versus
 $\FinalSupervisedAccuracy\pm\FinalSupervisedSD$\%). Without the variance term the
@@ -324,7 +324,7 @@ one feedforward schedule.
 subsequence of the data stream. A subsequence enters a ReLU multilayer
 perceptron, the same three-term objective is evaluated at its final layer, and
 backpropagation differentiates it through all layers and observations of the
-subsequence. It is optimized with momentum SGD and serves as a performance
+subsequence. It is optimized with plain SGD and serves as a performance
 reference for the objective, not as an alternative definition of \TeReL{}.
 
 \section{Related work}
@@ -422,19 +422,21 @@ classes~\cite{hinton2022}.
 The encoder is a ReLU multilayer perceptron with hidden widths 512 and 256.
 \TeReL{} is trained with batch size one and plain SGD for two passes over the
 encoder-training samples. The downstream evaluation trains a linear classifier
-on the concatenated activations of both layers of the encoder-training samples
+on the standardized concatenated activations of both layers of the encoder-training samples
 and evaluates it on held-out data. We reserve a stratified subset of the
 official training data (10{,}000 images) for all
 model selection; the official test split is used only for the final
 comparison. Central values are means and sample standard deviations over five
 initializations, and paired comparisons use 95\% Student-$t$ intervals.
-Hyperparameters and raw values appear in \cref{app:protocol}.
+All trained models, including the linear classifier and the references, use
+plain SGD; batch size is part of each method. Hyperparameters and raw values
+appear in \cref{app:protocol}.
 
 The references expose distinct relaxations. \TeReLOffline{} uses the same
 architecture and objective with subsequences of 128 and end-to-end
 backpropagation. A layer-local network trained with a supervised contrastive
 objective~\cite{khosla2020} (Layer-local SupCon) uses labels, minibatches,
-batch normalization, and AdamW at every layer. A supervised offline network is
+and batch normalization at every layer. A supervised offline network is
 trained end to end with labels and backpropagation. A random ReLU encoder of the same shape, a
 linear probe on the input, and batch and incremental SFA~\cite{wiskott2002,kompella2012}
 complete the comparison. The methods differ in their intrinsic data and
@@ -473,13 +475,14 @@ so its update would no longer be local to one synapse.
 
 \TeReL{} reaches $\FinalTeReLAccuracy\pm\FinalTeReLSD$\% held-out accuracy
 on MNIST (\cref{fig:performance}a). The random encoder reaches
-$95.14\pm0.27$\%, a paired gain of 1.25 percentage points $[0.88,1.61]$, and
-the gain over a linear probe on the input is 3.94 points $[3.65,4.23]$. Batch
-and incremental SFA reach $89.52\pm0.13$\% and $88.70\pm0.09$\%. Layer-local
-SupCon reaches $\FinalSupConAccuracy\pm\FinalSupConSD$\%, 0.57 points above
+$95.09\pm0.23$\%, a paired gain of 1.39 percentage points $[1.04,1.74]$, and
+the gain over a linear probe on the input is 3.94 points $[3.76,4.12]$. Batch
+and incremental SFA reach $90.07\pm0.26$\% and $89.98\pm0.09$\%. Layer-local
+SupCon reaches $\FinalSupConAccuracy\pm\FinalSupConSD$\%, 0.48 points $[0.10,0.85]$ above
 \TeReL{}, with labels and minibatches at every layer. \TeReLOffline{} reaches
-$\FinalOfflineAccuracy\pm\FinalOfflineSD$\%, above the fully supervised
-offline network at $\FinalSupervisedAccuracy\pm\FinalSupervisedSD$\%. The
+$\FinalOfflineAccuracy\pm\FinalOfflineSD$\%, on par with the fully supervised
+offline network at $\FinalSupervisedAccuracy\pm\FinalSupervisedSD$\% (paired
+difference $-0.03$ points $[-0.19,0.13]$). The
 objective itself therefore supports supervised-level accuracy when
 cross-layer and cross-time optimization are available; the gap to \TeReL{} is
 the cost of the locality constraints.
@@ -487,11 +490,11 @@ the cost of the locality constraints.
 \subsection{Temporal order and loss terms (H2)}
 
 Removing the temporal order or any single loss term degrades the
-representation (\cref{fig:performance}b). Shuffling the stream lowers accuracy by 1.31 paired
-points $[0.92,1.69]$, and removing the temporal term lowers it by 1.84 points
-$[1.65,2.02]$. Without the variance term, the representation collapses: the
+representation (\cref{fig:performance}b). Shuffling the stream lowers accuracy by 1.08 paired
+points $[0.75,1.40]$, and removing the temporal term lowers it by 1.50 points
+$[1.33,1.67]$. Without the variance term, the representation collapses: the
 median feature variance falls to about $1.4\times10^{-5}$ and accuracy to
-$15.10\pm0.18$\%. Without the covariance term, training diverges for all five
+$15.36\pm0.27$\%. Without the covariance term, training diverges for all five
 initializations before a representation can be measured. As in
 VICReg~\cite{bardes2022}, the invariance term alone admits trivial solutions;
 the variance term prevents a constant representation, and the covariance term
@@ -504,10 +507,11 @@ encoder can keep learning along the evaluation stream. With the training step
 size, these continued updates are too aggressive for an already trained
 representation: on the validation stream, the loss grows across the stream and
 the effective rank drops sharply. Scaling the step by $10^{-3}$ preserves
-validation accuracy ($96.17$\% versus $96.18$\%) and effective rank. With this
+validation accuracy ($96.51$\% versus $96.48$\% for the fixed encoder) and
+effective rank. With this
 scale fixed, continued updates on the held-out stream reach
-$96.43\pm0.15$\%, compared with $96.39\pm0.19$\% for the fixed encoder, a
-paired change of $+0.05$ points $[-0.03,0.12]$, while the feedforward weights
+$96.50\pm0.15$\%, compared with $96.48\pm0.15$\% for the fixed encoder, a
+paired change of $+0.02$ points $[-0.01,0.04]$, while the feedforward weights
 keep changing ($\lVert\Delta W\rVert_2=0.047$).
 
 \subsection{Representations}
@@ -609,9 +613,9 @@ one observation presented to the encoder.}
 Method & Samples & Batch or subsequence & Optimizer & Normalization \\
 \midrule
 \TeReL{} & $100{,}000$ & $1$ & SGD & none \\
-\TeReLOffline{} & $1{,}000{,}000$ & $128$ & momentum SGD & none \\
-Layer-local SupCon & $3{,}000{,}000$ & $256$ & AdamW & BatchNorm \\
-Supervised offline & $500{,}000$ & $256$ & AdamW & none \\
+\TeReLOffline{} & $1{,}000{,}000$ & $128$ & SGD & none \\
+Layer-local SupCon & $3{,}000{,}000$ & $256$ & SGD & BatchNorm \\
+Supervised offline & $500{,}000$ & $64$ & SGD & none \\
 Batch SFA & $50{,}000$ & complete fit & eigensolver & whitening \\
 Incremental SFA & $50{,}000$ & $1$ & incremental & whitening \\
 \bottomrule
@@ -623,10 +627,13 @@ $\lambda_T=1$, $\lambda_V=3.001981$, $\lambda_C=0.606133$,
 $\tau=1$, $\beta=0.99$, $\rho=0.995$, $\kappa=0.574950$,
 $\eta=0.1$, and $\omega=0.591110$. The learning rate is $0.0138703$ with
 coupled decay $10^{-6}$. \TeReLOffline{} uses 20 epochs, learning rate
-$0.0109437$, momentum $0.95$, decay $10^{-6}$, variance coefficient
+$0.4$, decay $10^{-6}$, variance coefficient
 $2.529924$, covariance coefficient $0.0218471$, and variance target
-$0.862789$. The linear probe uses AdamW for 60 epochs with learning rate
-$0.003$, decay $10^{-4}$, and batch size 2048.
+$0.862789$. The supervised offline network uses learning rate $0.3$ and
+Layer-local SupCon learning rate $0.3$. The linear probe is trained for 60
+epochs with batch size 1024 on features standardized with training
+statistics; its learning rate is selected per method on the validation split
+from $\{0.01,0.03,0.1,0.3,1\}$ and is $0.3$ for \TeReL{} and its ablations.
 
 \begin{table}[ht]
 \centering
@@ -638,18 +645,18 @@ fractions; a dash denotes a non-finite representation.}
 \toprule
 Method & 1101 & 1202 & 1303 & 1404 & 1505 \\
 \midrule
-\TeReL{} & .9625 & .9656 & .9661 & .9618 & .9633 \\
-\TeReLOffline{} & .9842 & .9838 & .9832 & .9841 & .9841 \\
-Random encoder & .9467 & .9533 & .9513 & .9533 & .9523 \\
-Input linear probe & .9250 & .9231 & .9254 & .9250 & .9238 \\
-Supervised offline & .9816 & .9820 & .9823 & .9806 & .9819 \\
-Layer-local SupCon & .9698 & .9693 & .9714 & .9693 & .9679 \\
-Batch SFA & .8961 & .8962 & .8954 & .8929 & .8952 \\
-Incremental SFA & .8865 & .8883 & .8861 & .8876 & .8864 \\
-No temporal term & .9456 & .9465 & .9455 & .9441 & .9457 \\
-No variance term & .1495 & .1493 & .1533 & .1526 & .1504 \\
+\TeReL{} & .9637 & .9647 & .9671 & .9633 & .9651 \\
+\TeReLOffline{} & .9847 & .9837 & .9841 & .9836 & .9842 \\
+Random encoder & .9475 & .9529 & .9495 & .9520 & .9524 \\
+Input linear probe & .9254 & .9262 & .9257 & .9250 & .9246 \\
+Supervised offline & .9836 & .9858 & .9840 & .9846 & .9838 \\
+Layer-local SupCon & .9698 & .9713 & .9677 & .9711 & .9678 \\
+Batch SFA & .9039 & .9010 & .8981 & .8981 & .9022 \\
+Incremental SFA & .8984 & .8998 & .9001 & .9008 & .8998 \\
+No temporal term & .9506 & .9503 & .9503 & .9478 & .9500 \\
+No variance term & .1530 & .1537 & .1582 & .1515 & .1518 \\
 No covariance term & -- & -- & -- & -- & -- \\
-Shuffled order & .9508 & .9474 & .9523 & .9512 & .9523 \\
+Shuffled order & .9559 & .9512 & .9535 & .9539 & .9556 \\
 \bottomrule
 \end{tabular}
 \end{table}
