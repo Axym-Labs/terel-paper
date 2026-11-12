@@ -50,19 +50,25 @@ Hebbian feedforward and an anti-Hebbian lateral update.}
 \makepublicationtitle
 
 \publicationabstract{%
-We introduce Temporal Regularized Learning (\TeReL{}), a spatially and
-temporally local learning rule for self-supervised representation learning
-from sequential input streams. The key idea is to instantiate a VICReg-style
-objective with temporally adjacent positives and non-differentiated running
-population statistics, yielding a per-neuron online loss with bounded state.
-The objective is a soft form of Slow Feature Analysis, and its gradient takes
-the form of Hebbian feedforward and anti-Hebbian lateral updates, so that no
-error signal crosses layers or time steps. On a class-chunked MNIST stream, a
-two-layer fully connected network trained by \TeReL{} with batch size one
-outperforms random features ($\FinalTeReLAccuracy$\% versus $95.09$\%
-linear-probe accuracy) and classical SFA, and a variant that relaxes both
-locality constraints is comparable to supervised backpropagation. The same
-unlabeled updates can continue during inference without loss of accuracy.}
+Backpropagation trains a network by sending error signals backward through
+its layers, and through time when the input is a sequence, which requires
+storing past activity. We introduce Temporal Regularized Learning (\TeReL{}),
+a spatially and temporally local learning rule for self-supervised
+representation learning from sequential input streams: each neuron learns from
+the current observation, its own previous activation, and a running mean and
+variance. \TeReL{} replaces the two views of VICReg by consecutive
+observations of the stream, and its batch statistics by running estimates that
+are not differentiated. The resulting objective is a soft form of Slow Feature
+Analysis, and its gradient is a Hebbian update of the feedforward weights and
+an anti-Hebbian update of one lateral matrix per layer. The aim of the
+experiments is to show that the rule works in a small network, not to compete
+with backpropagation. On a class-chunked MNIST stream, a two-layer fully
+connected network trained with batch size one outperforms random features
+($\FinalTeReLAccuracy$\% versus $95.09$\% linear-probe accuracy) and
+classical SFA, and a variant that relaxes both locality constraints is
+comparable to supervised backpropagation. Because training and inference use
+the same computation, the network can keep learning from unlabeled data during
+inference without loss of accuracy.}
 
 \publicationleadfigure[0.26\textheight]{\LeadFigurePath}{\LeadFigureCaption}
 \label{fig:overview}
