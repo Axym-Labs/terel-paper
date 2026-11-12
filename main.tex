@@ -426,7 +426,7 @@ on the standardized concatenated activations of both layers of the encoder-train
 and evaluates it on held-out data. We reserve a stratified subset of the
 official training data (10{,}000 images) for all
 model selection; the official test split is used only for the final
-comparison. Central values are means and sample standard deviations over five
+comparison. Reported values are means and sample standard deviations over five
 initializations, and paired comparisons use 95\% Student-$t$ intervals.
 All trained models, including the linear classifier and the references, use
 plain SGD; batch size is part of each method. Hyperparameters and raw values
@@ -597,10 +597,9 @@ artifacts and executable code, and takes responsibility for the final content.
 \section{Evaluation protocol and raw values}
 \label{app:protocol}
 
-\Cref{tab:configuration} lists the reported configurations. Model selection
-uses only the reserved training-data validation split. The configuration,
-readout, seeds, and repetitions are fixed before the held-out
-comparison; the held-out values are not used to choose among encoder variants.
+\Cref{tab:configuration} lists the reported configurations. All
+hyperparameters are selected on the reserved validation split; the test split
+is used only for the final comparison.
 
 \begin{table}[ht]
 \centering
@@ -626,8 +625,8 @@ For \TeReL{}, the selected coefficients are
 $\lambda_T=1$, $\lambda_V=3.001981$, $\lambda_C=0.606133$,
 $\tau=1$, $\beta=0.99$, $\rho=0.995$, $\kappa=0.574950$,
 $\eta=0.1$, and $\omega=0.591110$. The learning rate is $0.0138703$ with
-coupled decay $10^{-6}$. \TeReLOffline{} uses 20 epochs, learning rate
-$0.4$, decay $10^{-6}$, variance coefficient
+weight decay $10^{-6}$. \TeReLOffline{} uses 20 epochs, learning rate
+$0.4$, weight decay $10^{-6}$, variance coefficient
 $2.529924$, covariance coefficient $0.0218471$, and variance target
 $0.862789$. The supervised offline network uses learning rate $0.3$ and
 Layer-local SupCon learning rate $0.3$. The linear probe is trained for 60
@@ -638,12 +637,12 @@ from $\{0.01,0.03,0.1,0.3,1\}$ and is $0.3$ for \TeReL{} and its ablations.
 \begin{table}[ht]
 \centering
 \caption{Held-out MNIST accuracy by seed. Values are
-fractions; a dash denotes a non-finite representation.}
+fractions; a dash denotes diverged training.}
 \label{tab:raw}
 \small
 \begin{tabular}{lccccc}
 \toprule
-Method & 1101 & 1202 & 1303 & 1404 & 1505 \\
+Method / seed & 1101 & 1202 & 1303 & 1404 & 1505 \\
 \midrule
 \TeReL{} & .9637 & .9647 & .9671 & .9633 & .9651 \\
 \TeReLOffline{} & .9847 & .9837 & .9841 & .9836 & .9842 \\
