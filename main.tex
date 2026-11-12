@@ -50,9 +50,9 @@ Hebbian feedforward and an anti-Hebbian lateral update.}
 \makepublicationtitle
 
 \publicationabstract{%
-Backpropagation trains a network by sending error signals backward through
-its layers, and through time when the input is a sequence, which requires
-storing past activity. We introduce Temporal Regularized Learning (\TeReL{}),
+Layer-local self-supervised objectives remove the backward pass between
+layers, but most still compute their loss over a batch of samples and are
+therefore local in space but not in time. We introduce Temporal Regularized Learning (\TeReL{}),
 a spatially and temporally local learning rule for self-supervised
 representation learning from sequential input streams. The key idea is to
 instantiate a VICReg-style objective with temporally adjacent positives and
