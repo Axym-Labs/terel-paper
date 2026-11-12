@@ -54,11 +54,10 @@ Backpropagation trains a network by sending error signals backward through
 its layers, and through time when the input is a sequence, which requires
 storing past activity. We introduce Temporal Regularized Learning (\TeReL{}),
 a spatially and temporally local learning rule for self-supervised
-representation learning from sequential input streams: each neuron learns from
-the current observation, its own previous activation, and a running mean and
-variance. \TeReL{} replaces the two views of VICReg by consecutive
-observations of the stream, and its batch statistics by running estimates that
-are not differentiated. The resulting objective is a soft form of Slow Feature
+representation learning from sequential input streams. The key idea is to
+instantiate a VICReg-style objective with temporally adjacent positives and
+non-differentiated running population statistics, yielding a per-neuron online
+loss with bounded state. The objective is a soft form of Slow Feature
 Analysis, and its gradient is a Hebbian update of the feedforward weights and
 an anti-Hebbian update of one lateral matrix per layer. The aim of the
 experiments is to show that the rule works in a small network, not to compete
