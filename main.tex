@@ -37,13 +37,6 @@ Local in Space and Time}
 \newcommand{\FinalSupervisedAccuracy}{98.17}
 \newcommand{\FinalSupervisedSD}{0.07}
 
-\newcommand{\CIFARABSTRACT}{}
-\newcommand{\CIFARINTRO}{}
-\newcommand{\CIFARPROTOCOLDATA}{}
-\newcommand{\CIFARPROTOCOLSPLIT}{}
-\newcommand{\CIFARRESULTS}{}
-\newcommand{\CIFARLIMIT}{}
-\newcommand{\CIFARCONCLUSION}{}
 
 \providecommand{\LeadFigurePath}{figures/terel-method-overview.pdf}
 \providecommand{\LeadFigureCaption}{%
@@ -69,8 +62,10 @@ assignment through time without removing the gradient of the current
 observation. At each layer, this gradient defines a signed postsynaptic neuron
 state: presynaptic activity times this state gives a feedforward update of
 Hebbian form, and pairs of states give an anti-Hebbian update of the lateral
-matrix. No error signal crosses learned layers or time steps, and each neuron
-keeps three scalars in leaky integrators (exponential moving averages). On a
+matrix. No error signal crosses learned layers or time steps. Each neuron keeps
+three scalars, its previous activation and a running mean and variance, and
+the running statistics, lateral matrix, and feedforward weights are stored by
+leaky integrators (exponential moving averages). On a
 class-chunked MNIST stream, a two-layer fully connected network trained by
 \TeReL{} with batch size one outperforms random features in held-out
 linear-probe accuracy ($\FinalTeReLAccuracy\pm\FinalTeReLSD$\% versus
@@ -80,8 +75,7 @@ backpropagation ($\FinalOfflineAccuracy\pm\FinalOfflineSD$\% versus
 $\FinalSupervisedAccuracy\pm\FinalSupervisedSD$\%). Without the variance term the
 representation collapses, and without the covariance term training diverges.
 In an online learning demonstration, the same unlabeled updates continue along
-the evaluation stream and preserve accuracy.%
-\CIFARABSTRACT}
+the evaluation stream and preserve accuracy.}
 
 \publicationleadfigure[0.26\textheight]{\LeadFigurePath}{\LeadFigureCaption}
 \label{fig:overview}
@@ -144,7 +138,7 @@ rule with Hebbian feedforward and anti-Hebbian lateral updates, and clarifies
 learning objectives and classical temporal representation learning ideas such
 as Slow Feature Analysis and trace learning~\cite{foldiak1991,oja1982}. Third,
 it evaluates \TeReL{} with batch size one under controlled temporal
-orderings\CIFARINTRO{} against random, classical SFA, supervised, and
+orderings against random, classical SFA, supervised, and
 relaxed-locality references, and reports ablations of each loss term.
 
 The experiments test three hypotheses. (H1) Despite its locality constraints,
@@ -241,9 +235,9 @@ nonzero when both of its factors are nonzero.
 \subsection{Regularized target and neuron state}
 
 The residual $r_t$ induces an activation target,
-$\widehat z_t=\stopgrad(z_t-r_t)$: updates encourage $z_t$ to match a weighted
-combination of the previous activation and the running mean, with a lateral
-correction that discourages correlated activity. The local loss
+$\widehat z_t=\stopgrad(z_t-r_t)$: updates move $z_t$ toward the previous
+activation, away from the running mean where the stored variance is below
+$\tau$, and against correlated activity. The local loss
 $\lambda_T\lVert z_t-\widehat z_t\rVert_2^2/D$ has the same gradient with
 respect to $z_t$ as $\ell$. This target is formed within the layer; it is not
 an external target.
@@ -413,7 +407,7 @@ their core temporal objective remains unchanged.
 \section{Experimental protocol}
 \label{sec:experiments}
 
-We evaluate \TeReL{} on MNIST~\cite{lecun1998}\CIFARPROTOCOLDATA{} with
+We evaluate \TeReL{} on MNIST~\cite{lecun1998} with
 synthetic sequential coherence. \TeReL{}'s objective is strictly
 representational and uses no supervision. However, the order of the data
 stream can induce relatively arbitrary pairs of positives. For example, placing
@@ -430,7 +424,7 @@ The encoder is a ReLU multilayer perceptron with hidden widths 512 and 256.
 encoder-training samples. The downstream evaluation trains a linear classifier
 on the concatenated activations of both layers of the encoder-training samples
 and evaluates it on held-out data. We reserve a stratified subset of the
-official training data (10{,}000 MNIST images\CIFARPROTOCOLSPLIT{}) for all
+official training data (10{,}000 images) for all
 model selection; the official test split is used only for the final
 comparison. Central values are means and sample standard deviations over five
 initializations, and paired comparisons use 95\% Student-$t$ intervals.
@@ -452,8 +446,8 @@ temporal, variance, or covariance coefficient to zero. For the online
 learning demonstration, the trained encoder continues its unlabeled updates
 along the evaluation stream, using the same fitted probe as the fixed encoder.
 Each representation is read before the current observation updates the
-encoder. A continuation step, chosen on the validation stream, scales the
-training learning rate.
+encoder. The learning rate of these continued updates is a fixed fraction of
+the training learning rate, chosen on the validation stream.
 
 \section{Results}
 \label{sec:results}
@@ -490,8 +484,6 @@ objective itself therefore supports supervised-level accuracy when
 cross-layer and cross-time optimization are available; the gap to \TeReL{} is
 the cost of the locality constraints.
 
-\CIFARRESULTS
-
 \subsection{Temporal order and loss terms (H2)}
 
 Removing the temporal order or any single loss term degrades the
@@ -507,7 +499,7 @@ keeps the multidimensional code stable.
 
 \subsection{Online learning demonstration (H3)}
 
-Because training and inference use the same samplewise computation, the
+Because training and inference use the same per-sample computation, the
 encoder can keep learning along the evaluation stream. With the training step
 size, these continued updates are too aggressive for an already trained
 representation: on the validation stream, the loss grows across the stream and
@@ -559,8 +551,7 @@ signal.
 
 \section{Limitations and future work}
 
-The experiments use a constructed, label-ordered stream on image
-datasets\CIFARLIMIT{}. Natural streams contain several time scales and may
+The experiments use a constructed, label-ordered stream on MNIST. Natural streams contain several time scales and may
 require a different balance among the temporal, variance, and covariance
 terms; establishing \TeReL{} on video or sensor streams is the most important
 empirical extension. Continued online updates require a smaller step than
@@ -579,7 +570,7 @@ temporal losses. Detached running statistics and a lagged lateral matrix make
 the rule local in space and time, and its gradient takes the form of Hebbian
 feedforward and anti-Hebbian lateral updates driven by a signed neuron state.
 Trained with batch size one, \TeReL{} learns representations that improve on
-random features and classical SFA\CIFARCONCLUSION{}, and the same rule keeps
+random features and classical SFA, and the same rule keeps
 learning online after training. \TeReL{} emphasizes locality and streaming
 compatibility and therefore maps naturally to constrained hardware, while
 connecting regularized self-supervised learning to classical temporal ideas
@@ -666,11 +657,11 @@ Shuffled order & .9508 & .9474 & .9523 & .9512 & .9523 \\
 \section{Locality and operation accounting}
 
 For a layer of width $D$ with input width $d$, the feedforward multiplication
-costs $Dd$ multiply--accumulates. Forming the target and causal statistics is
+costs $Dd$ multiply--accumulates. Forming the target and running statistics is
 linear in $D$. The lateral target and state correction each use a
 $D\times D$ matrix--vector multiplication, and updating the lateral moment
 uses a rank-one outer product. The persistent quantities are summarized in
-\cref{tab:resources}; temporary activations are not persistent causal state.
+\cref{tab:resources}; temporary activations are not persistent state.
 
 \begin{table}[ht]
 \centering
