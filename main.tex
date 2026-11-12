@@ -55,27 +55,14 @@ temporally local learning rule for self-supervised representation learning
 from sequential input streams. The key idea is to instantiate a VICReg-style
 objective with temporally adjacent positives and non-differentiated running
 population statistics, yielding a per-neuron online loss with bounded state.
-A lagged same-layer matrix supplies the covariance signal. Because the
-positives are temporally adjacent, the objective is a soft form of Slow Feature
-Analysis, and we show that detaching the stored quantities removes credit
-assignment through time without removing the gradient of the current
-observation. At each layer, this gradient defines a signed postsynaptic neuron
-state: presynaptic activity times this state gives a feedforward update of
-Hebbian form, and pairs of states give an anti-Hebbian update of the lateral
-matrix. No error signal crosses learned layers or time steps. Each neuron keeps
-three scalars, its previous activation and a running mean and variance, and
-the running statistics, lateral matrix, and feedforward weights are stored by
-leaky integrators (exponential moving averages). On a
-class-chunked MNIST stream, a two-layer fully connected network trained by
-\TeReL{} with batch size one outperforms random features in held-out
-linear-probe accuracy ($\FinalTeReLAccuracy\pm\FinalTeReLSD$\% versus
-$95.09\pm0.23$\%) as well as classical SFA. \TeReLOffline{}, which relaxes
-both locality constraints within a subsequence, is comparable to supervised
-backpropagation ($\FinalOfflineAccuracy\pm\FinalOfflineSD$\% versus
-$\FinalSupervisedAccuracy\pm\FinalSupervisedSD$\%). Without the variance term the
-representation collapses, and without the covariance term training diverges.
-In an online learning demonstration, the same unlabeled updates continue along
-the evaluation stream and preserve accuracy.}
+The objective is a soft form of Slow Feature Analysis, and its gradient takes
+the form of Hebbian feedforward and anti-Hebbian lateral updates, so that no
+error signal crosses layers or time steps. On a class-chunked MNIST stream, a
+two-layer fully connected network trained by \TeReL{} with batch size one
+outperforms random features ($\FinalTeReLAccuracy$\% versus $95.09$\%
+linear-probe accuracy) and classical SFA, and a variant that relaxes both
+locality constraints is comparable to supervised backpropagation. The same
+unlabeled updates can continue during inference without loss of accuracy.}
 
 \publicationleadfigure[0.26\textheight]{\LeadFigurePath}{\LeadFigureCaption}
 \label{fig:overview}
