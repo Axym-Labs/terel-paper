@@ -92,97 +92,69 @@ def _projection_panel(ax, embedding, labels, colors):
     ax.set_yticks([])
 
 
+def _panel_title(ax, label, title):
+    ax.text(-0.10, 1.05, label, transform=ax.transAxes, va="bottom", ha="left",
+            color=INK, fontweight="bold", fontsize=9)
+    ax.text(0.5, 1.05, title, transform=ax.transAxes, va="bottom", ha="center",
+            color=INK, fontweight="bold")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mnist", type=Path, required=True)
+    parser.add_argument("--cifar", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     arguments = parser.parse_args()
 
     _style()
-    mnist_x, mnist_y = _load(arguments.mnist)
-    mnist_embedding = _embedding(mnist_x)
     ks = (1, 2, 5, 10, 20, 50)
-    mnist_purity, mnist_chance = _purity(mnist_x, mnist_y, ks)
+    datasets = [("MNIST", *_load(arguments.mnist))]
+    if arguments.cifar is not None:
+        datasets.append(("CIFAR-100", *_load(arguments.cifar)))
     fig, axes = plt.subplots(
-        1,
-        2,
-        figsize=(7.15, 2.65),
-        gridspec_kw={"width_ratios": (1.0, 1.15), "wspace": 0.31},
+        1, len(datasets) + 1, figsize=(7.15, 2.45),
+        gridspec_kw={"width_ratios": (1.0,) * len(datasets) + (1.15,), "wspace": 0.31},
     )
-    _projection_panel(axes[0], mnist_embedding, mnist_y, MNIST_COLORS)
-    neighborhood_axis = axes[1]
-
-    neighborhood_axis.plot(
-        ks,
-        mnist_purity,
-        color=AXYM,
-        marker="o",
-        markersize=3.5,
-        linewidth=1.25,
-    )
-    neighborhood_axis.axhline(
-        mnist_chance, color=AXYM, linewidth=0.7, linestyle=":"
-    )
+    record = {"neighbors": list(ks)}
+    styles = {"MNIST": (AXYM, "o"), "CIFAR-100": ("#0072B2", "s")}
+    for index, (name, x, y) in enumerate(datasets):
+        classes = np.unique(y)
+        if len(classes) > 10:
+            # Visualize ten fixed classes; neighborhoods below use all classes.
+            shown = np.sort(np.random.default_rng(1701).choice(classes, 10, replace=False))
+            selected = np.isin(y, shown)
+            embedding_x, embedding_y = x[selected], y[selected]
+            title = f"{name} (10 classes)"
+        else:
+            embedding_x, embedding_y, title = x, y, name
+        _projection_panel(axes[index], _embedding(embedding_x), embedding_y, MNIST_COLORS)
+        _panel_title(axes[index], "abc"[index], title)
+        purity, chance = _purity(x, y, ks)
+        color, marker = styles[name]
+        axes[-1].plot(ks, purity, color=color, marker=marker, markersize=3.5,
+                      linewidth=1.25, label=name)
+        axes[-1].axhline(chance, color=color, linewidth=0.7, linestyle=":")
+        record[name.lower().replace("-", "")] = {
+            "observations": int(len(y)),
+            "same_class_fraction": purity.tolist(),
+            "class_frequency_chance": chance,
+        }
+    neighborhood_axis = axes[-1]
     neighborhood_axis.set_xscale("log")
     neighborhood_axis.set_xticks(ks, [str(k) for k in ks])
     neighborhood_axis.set_ylim(0.0, 1.02)
     neighborhood_axis.set_xlabel("Neighbors, k")
     neighborhood_axis.set_ylabel("Same-class neighbor fraction")
     neighborhood_axis.grid(axis="y", color=RULE, linewidth=0.55)
-
-    titles = ["MNIST", "Full-space neighborhoods"]
-    for label, title, ax in zip(
-        "ab",
-        titles,
-        axes,
-        strict=True,
-    ):
-        ax.text(
-            -0.10,
-            1.05,
-            label,
-            transform=ax.transAxes,
-            va="bottom",
-            ha="left",
-            color=INK,
-            fontweight="bold",
-            fontsize=9,
-        )
-        ax.text(
-            0.5,
-            1.05,
-            title,
-            transform=ax.transAxes,
-            va="bottom",
-            ha="center",
-            color=INK,
-            fontweight="bold",
-        )
+    if len(datasets) > 1:
+        neighborhood_axis.legend(frameon=False, fontsize=7, loc="upper right")
+    _panel_title(neighborhood_axis, "abc"[len(datasets)], "Full-space neighborhoods")
 
     arguments.output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(arguments.output.with_suffix(".pdf"), bbox_inches="tight", transparent=True)
-    fig.savefig(
-        arguments.output.with_suffix(".png"),
-        bbox_inches="tight",
-        transparent=True,
-        dpi=320,
-    )
+    fig.savefig(arguments.output.with_suffix(".png"), bbox_inches="tight", transparent=True, dpi=320)
     plt.close(fig)
-    arguments.output.with_suffix(".json").write_text(
-        json.dumps(
-            {
-                "neighbors": list(ks),
-                "mnist": {
-                    "observations": len(mnist_y),
-                    "same_class_fraction": mnist_purity.tolist(),
-                    "class_frequency_chance": mnist_chance,
-                },
-            },
-            indent=2,
-            sort_keys=True,
-        )
-        + "\n"
-    )
+    arguments.output.with_suffix(".json").write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
 
 
 if __name__ == "__main__":

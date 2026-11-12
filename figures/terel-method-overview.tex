@@ -123,7 +123,7 @@
   \node[row,minimum height=0.86cm] (base) at ($(B)+(0,0.95)$)
     {$b_t=(z_t-\widehat z_t)\odot\mathbf 1[a_t>0]$};
   \node[anchor=south,font=\scriptsize,text=AxymMuted]
-    at ($(base.north)+(0,0.08)$) {Exact preactivation residual};
+    at ($(base.north)+(0,0.08)$) {Preactivation residual};
   \draw[down] (base.south) -- node[right=2pt,font=\scriptsize,text=AxymMuted]
     {one correction} ($(base.south)+(0,-0.86)$);
   \node[result] (state) at ($(B)+(0,-0.67)$)
@@ -143,8 +143,8 @@
        +\gamma s_ts_t^{\mathsf T}$};
   \node[font=\footnotesize,text=AxymMuted,align=center,text width=4.25cm]
     at ($(C)+(0,-1.78)$)
-    {Feedforward endpoints: $x_i,s_j$\\
-     Lateral endpoints: $\bar z_j,\bar z_k$ and $s_j,s_k$};
+    {Feedforward synapse: $x_i,s_j$\\
+     Lateral synapse: $\bar z_j,\bar z_k$ and $s_j,s_k$};
 
   % Short arrows live entirely in equal gutters.
   \draw[next] ($(stage-a.east)+(0,0)$) -- ($(stage-b.west)+(0,0)$);

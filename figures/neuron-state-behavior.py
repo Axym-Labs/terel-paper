@@ -97,43 +97,32 @@ def _distribution_panel(ax, values, indices):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mnist", type=Path, required=True)
+    parser.add_argument("--cifar", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--window", type=int, default=512)
     args = parser.parse_args()
 
     _style()
-    values, indices = _load(args.mnist)
-
+    datasets = [("MNIST", args.mnist)] + ([("CIFAR-100", args.cifar)] if args.cifar else [])
     fig, axes = plt.subplots(
-        1,
-        2,
-        figsize=(7.15, 2.15),
-        gridspec_kw={"width_ratios": (1.65, 1.0), "wspace": 0.31},
+        len(datasets), 2, figsize=(7.15, 1.9 * len(datasets)),
+        gridspec_kw={"width_ratios": (1.65, 1.0), "wspace": 0.31, "hspace": 0.75},
+        squeeze=False,
     )
-    _trace_panel(axes[0], values, indices, args.window)
-    _distribution_panel(axes[1], values, indices)
-
-    for label, ax in zip("ab", axes, strict=True):
-        ax.text(
-            -0.12,
-            1.03,
-            label,
-            transform=ax.transAxes,
-            ha="left",
-            va="bottom",
-            color=INK,
-            fontweight="bold",
-            fontsize=9,
-        )
+    for row, (name, path) in enumerate(datasets):
+        values, indices = _load(path)
+        _trace_panel(axes[row, 0], values, indices, args.window)
+        _distribution_panel(axes[row, 1], values, indices)
+        for column, ax in enumerate(axes[row]):
+            ax.text(-0.12, 1.03, "abcd"[2 * row + column], transform=ax.transAxes,
+                    ha="left", va="bottom", color=INK, fontweight="bold", fontsize=9)
+            if len(datasets) > 1:
+                ax.text(0.5, 1.03, name, transform=ax.transAxes, ha="center", va="bottom",
+                        color=INK, fontweight="bold")
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(args.output.with_suffix(".pdf"), bbox_inches="tight", transparent=True)
-    fig.savefig(
-        args.output.with_suffix(".png"),
-        bbox_inches="tight",
-        transparent=True,
-        dpi=320,
-    )
+    fig.savefig(args.output.with_suffix(".png"), bbox_inches="tight", transparent=True, dpi=320)
     plt.close(fig)
 
 

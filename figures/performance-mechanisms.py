@@ -114,23 +114,14 @@ def _difference_rows(ax, rows, *, xlabel, xlim) -> None:
     ax.set_axisbelow(True)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--summary", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
-    arguments = parser.parse_args()
+def _limits(values, pad):
+    low, high = min(values), max(values)
+    span = max(high - low, 1e-6)
+    return low - pad * span, high + pad * span
 
-    _style()
-    summary = json.loads(arguments.summary.read_text())
-    mnist = summary["mnist"]
-    methods = mnist["methods"]
-    fig, axes = plt.subplots(
-        1,
-        2,
-        figsize=(7.15, 3.05),
-        gridspec_kw={"width_ratios": (1.15, 1.0), "wspace": 0.48},
-    )
 
+def _dataset_rows(axes, data, name, *, label_offset):
+    methods = data["methods"]
     primary_rows = (
         ("Supervised offline", methods["supervised-offline"]["accuracy"], ORANGE, "D"),
         ("TeReL-Offline", methods["terel-offline"]["accuracy"], AXYM_LIGHT, "s"),
@@ -141,61 +132,56 @@ def main() -> None:
         ("Batch SFA", methods["batch-sfa"]["accuracy"], GREEN, "s"),
         ("Incremental SFA", methods["incremental-sfa"]["accuracy"], GREEN, "^"),
     )
+    accuracies = [100 * row[1]["mean"] for row in primary_rows]
     _point_rows(
-        axes[0],
-        primary_rows,
-        xlabel="MNIST accuracy (%)",
-        xlim=(86.0, 100.0),
+        axes[0], primary_rows, xlabel=f"{name} accuracy (%)",
+        xlim=_limits(accuracies, 0.08),
     )
 
-    online = mnist["online_continuation"]["accuracy_difference"]
-    shuffled = mnist["contrasts"]["terel-minus-shuffled-order"]
-    no_temporal = mnist["contrasts"]["terel-minus-no-temporal"]
+    online = data["online_continuation"]["accuracy_difference"]
+    shuffled = data["contrasts"]["terel-minus-shuffled-order"]
+    no_temporal = data["contrasts"]["terel-minus-no-temporal"]
     mechanism_rows = (
-        (
-            "Continued updates",
-            online["mean"],
-            online["student_t_ci95_low"],
-            online["student_t_ci95_high"],
-            AXYM,
-            "o",
-        ),
-        (
-            "Shuffled order",
-            -shuffled["mean_difference"],
-            -shuffled["student_t_ci95_high"],
-            -shuffled["student_t_ci95_low"],
-            BLUE,
-            "s",
-        ),
-        (
-            "No temporal term",
-            -no_temporal["mean_difference"],
-            -no_temporal["student_t_ci95_high"],
-            -no_temporal["student_t_ci95_low"],
-            GREEN,
-            "^",
-        ),
+        ("Continued updates", online["mean"], online["student_t_ci95_low"],
+         online["student_t_ci95_high"], AXYM, "o"),
+        ("Shuffled order", -shuffled["mean_difference"], -shuffled["student_t_ci95_high"],
+         -shuffled["student_t_ci95_low"], BLUE, "s"),
+        ("No temporal term", -no_temporal["mean_difference"],
+         -no_temporal["student_t_ci95_high"], -no_temporal["student_t_ci95_low"], GREEN, "^"),
     )
+    ends = [100 * v for row in mechanism_rows for v in row[2:4]] + [0.0]
     _difference_rows(
-        axes[1],
-        mechanism_rows,
-        xlabel="Accuracy change from TeReL (points)",
-        xlim=(-2.25, 0.35),
+        axes[1], mechanism_rows, xlabel=f"{name} accuracy change from TeReL (points)",
+        xlim=_limits(ends, 0.12),
     )
-
     titles = ["Representation quality", "Temporal signal and continuation"]
-    for label, title, ax in zip("ab", titles, axes, strict=True):
-        _panel_label(ax, label, title)
+    for offset, (title, ax) in enumerate(zip(titles, axes, strict=True)):
+        _panel_label(ax, "abcd"[label_offset + offset], f"{name}: {title.lower()}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--summary", type=Path, required=True, help="MNIST analysis JSON")
+    parser.add_argument("--cifar", type=Path, help="CIFAR-100 analysis JSON")
+    parser.add_argument("--output", type=Path, required=True)
+    arguments = parser.parse_args()
+
+    _style()
+    datasets = [("MNIST", json.loads(arguments.summary.read_text())["mnist"])]
+    if arguments.cifar is not None:
+        datasets.append(("CIFAR-100", json.loads(arguments.cifar.read_text())["cifar100"]))
+    fig, axes = plt.subplots(
+        len(datasets), 2,
+        figsize=(7.15, 3.05 * len(datasets)),
+        gridspec_kw={"width_ratios": (1.15, 1.0), "wspace": 0.48, "hspace": 0.62},
+        squeeze=False,
+    )
+    for row, (name, data) in enumerate(datasets):
+        _dataset_rows(axes[row], data, name, label_offset=2 * row)
 
     arguments.output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(arguments.output.with_suffix(".pdf"), bbox_inches="tight", transparent=True)
-    fig.savefig(
-        arguments.output.with_suffix(".png"),
-        bbox_inches="tight",
-        transparent=True,
-        dpi=320,
-    )
+    fig.savefig(arguments.output.with_suffix(".png"), bbox_inches="tight", transparent=True, dpi=320)
     plt.close(fig)
 
 
