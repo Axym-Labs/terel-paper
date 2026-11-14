@@ -59,9 +59,8 @@ instantiate a VICReg-style objective with temporally adjacent positives and
 non-differentiated running population statistics, yielding a per-neuron online
 loss with bounded state. The objective is a soft form of Slow Feature
 Analysis, and its gradient is a Hebbian update of the feedforward weights and
-an anti-Hebbian update of one lateral matrix per layer. The aim of the
-experiments is to show that the rule works in a small network, not to compete
-with backpropagation. On a class-chunked MNIST stream, a two-layer fully
+an anti-Hebbian update of one lateral matrix per layer. The experiments
+show that the rule works in a small network. On a class-chunked MNIST stream, a two-layer fully
 connected network trained with batch size one outperforms random features
 ($\FinalTeReLAccuracy$\% versus $95.09$\% linear-probe accuracy) and
 classical SFA, and a variant that relaxes both locality constraints is
