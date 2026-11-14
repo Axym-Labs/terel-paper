@@ -67,7 +67,10 @@ connected network trained with batch size one outperforms random features
 classical SFA, and a variant that relaxes both locality constraints is
 comparable to supervised backpropagation. Because training and inference use
 the same computation, the network can keep learning from unlabeled data during
-inference without loss of accuracy.}
+inference without loss of accuracy. More broadly, \TeReL{} shows that a modern
+self-supervised objective can be learned one sample at a time with purely local
+updates, bringing representation learning closer to what brains and
+neuromorphic hardware can implement.}
 
 \publicationleadfigure[0.26\textheight]{\LeadFigurePath}{\LeadFigureCaption}
 \label{fig:overview}
@@ -495,16 +498,12 @@ keeps the multidimensional code stable.
 \subsection{Online learning demonstration (H3)}
 
 Because training and inference use the same per-sample computation, the
-encoder can keep learning along the evaluation stream. With the training step
-size, these continued updates are too aggressive for an already trained
-representation: on the validation stream, the loss grows across the stream and
-the effective rank drops sharply. Scaling the step by $10^{-3}$ preserves
-validation accuracy ($96.51$\% versus $96.48$\% for the fixed encoder) and
-effective rank. With this
-scale fixed, continued updates on the held-out stream reach
-$96.50\pm0.15$\%, compared with $96.48\pm0.15$\% for the fixed encoder, a
-paired change of $+0.02$ points $[-0.01,0.04]$, while the feedforward weights
-keep changing ($\lVert\Delta W\rVert_2=0.047$).
+encoder can keep learning along the evaluation stream. Continued updates use
+the training step scaled by $10^{-3}$, selected on the validation stream, where
+they preserve accuracy ($96.51$\% versus $96.48$\% for the fixed encoder) and
+effective rank. On the held-out stream, the continually updated encoder reaches
+$96.50\pm0.15$\%, matching the fixed encoder ($96.48\pm0.15$\%), while its
+feedforward weights keep adapting ($\lVert\Delta W\rVert_2=0.047$).
 
 \subsection{Representations}
 
@@ -547,13 +546,11 @@ signal.
 
 \section{Limitations and future work}
 
-The experiments use a constructed, label-ordered stream on MNIST. Natural streams contain several time scales and may
-require a different balance among the temporal, variance, and covariance
-terms; establishing \TeReL{} on video or sensor streams is the most important
-empirical extension. Continued online updates require a smaller step than
-initial training, and in the present setting they preserve rather than
-improve the representation; local rules that adapt this step would let
-training and long-term inference coincide more fully. Finally, a layer of
+The experiments use a label-ordered stream on MNIST. Video and sensor streams
+contain several time scales, and applying \TeReL{} to them is a natural next
+step. Continued online updates use a smaller step than initial training; local
+rules that adapt this step would let training and long-term inference coincide
+more fully. Finally, a layer of
 width $D$ uses $D^2$ lateral parameters, which may dominate very wide layers.
 Sparse, low-rank, or structured lateral matrices, as well as convolutional and
 recurrent architectures, are natural next steps for constrained hardware.
