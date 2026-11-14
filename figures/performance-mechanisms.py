@@ -108,6 +108,7 @@ def _difference_rows(ax, rows, *, xlabel, xlim) -> None:
         )
     ax.axvline(0.0, color=AXYM, linewidth=0.8, linestyle=":")
     ax.set_yticks(y, [row[0] for row in rows])
+    ax.set_ylim(-1.5, len(rows) + 0.5)
     ax.set_xlim(*xlim)
     ax.set_xlabel(xlabel)
     ax.grid(axis="x", color=RULE, linewidth=0.55)
@@ -138,12 +139,9 @@ def _dataset_rows(axes, data, name, *, label_offset):
         xlim=_limits(accuracies, 0.08),
     )
 
-    online = data["online_continuation"]["accuracy_difference"]
     shuffled = data["contrasts"]["terel-minus-shuffled-order"]
     no_temporal = data["contrasts"]["terel-minus-no-temporal"]
     mechanism_rows = (
-        ("Continued updates", online["mean"], online["student_t_ci95_low"],
-         online["student_t_ci95_high"], AXYM, "o"),
         ("Shuffled order", -shuffled["mean_difference"], -shuffled["student_t_ci95_high"],
          -shuffled["student_t_ci95_low"], BLUE, "s"),
         ("No temporal term", -no_temporal["mean_difference"],
@@ -154,7 +152,7 @@ def _dataset_rows(axes, data, name, *, label_offset):
         axes[1], mechanism_rows, xlabel=f"{name} accuracy change from TeReL (points)",
         xlim=_limits(ends, 0.12),
     )
-    titles = ["Representation quality", "Temporal signal and continuation"]
+    titles = ["Representation quality", "Temporal signal"]
     for offset, (title, ax) in enumerate(zip(titles, axes, strict=True)):
         _panel_label(ax, "abcd"[label_offset + offset], f"{name}: {title.lower()}")
 

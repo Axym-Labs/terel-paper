@@ -64,9 +64,7 @@ show that the rule works in a small network. On a class-chunked MNIST stream, a 
 connected network trained with batch size one outperforms random features
 ($\FinalTeReLAccuracy$\% versus $95.09$\% linear-probe accuracy) and
 classical SFA, and a variant that relaxes both locality constraints is
-comparable to supervised backpropagation. Because training and inference use
-the same computation, the network can keep learning from unlabeled data during
-inference without loss of accuracy. More broadly, \TeReL{} shows that a modern
+comparable to supervised backpropagation. More broadly, \TeReL{} shows that a modern
 self-supervised objective can be learned one sample at a time with purely local
 updates, bringing representation learning closer to what brains and
 neuromorphic hardware can implement.}
@@ -135,12 +133,10 @@ it evaluates \TeReL{} with batch size one under controlled temporal
 orderings against random, classical SFA, supervised, and
 relaxed-locality references, and reports ablations of each loss term.
 
-The experiments test three hypotheses. (H1) Despite its locality constraints,
+The experiments test two hypotheses. (H1) Despite its locality constraints,
 \TeReL{} trained with batch size one learns a useful deep representation.
 (H2) The temporal order and each of the three loss terms contribute to this
-representation. (H3) Continuing the same unlabeled updates along an evaluation
-stream preserves the representation, so that the rule can keep learning
-online.
+representation.
 
 \section{Method}
 \label{sec:method}
@@ -438,12 +434,7 @@ optimization requirements, so the comparison reports representation quality
 rather than equal compute.
 
 Four ablations examine \TeReL{} itself: shuffling the stream, and setting the
-temporal, variance, or covariance coefficient to zero. For the online
-learning demonstration, the trained encoder continues its unlabeled updates
-along the evaluation stream, using the same fitted probe as the fixed encoder.
-Each representation is read before the current observation updates the
-encoder. The learning rate of these continued updates is a fixed fraction of
-the training learning rate, chosen on the validation stream.
+temporal, variance, or covariance coefficient to zero.
 
 \section{Results}
 \label{sec:results}
@@ -460,8 +451,8 @@ so its update would no longer be local to one synapse.
   \includegraphics[width=\linewidth]{figures/performance-mechanisms.pdf}
   \caption{\textbf{Representation quality and paired temporal effects on
   MNIST.} \textbf{a}, Held-out linear-probe accuracy (mean and sample standard
-  deviation). \textbf{b}, Paired accuracy changes relative to \TeReL{} with a
-  fixed encoder, with 95\% Student-$t$ intervals.}
+  deviation). \textbf{b}, Paired accuracy changes relative to \TeReL{}, with 95\%
+  Student-$t$ intervals.}
   \label{fig:performance}
 \end{figure}
 
@@ -493,16 +484,6 @@ initializations before a representation can be measured. As in
 VICReg~\cite{bardes2022}, the invariance term alone admits trivial solutions;
 the variance term prevents a constant representation, and the covariance term
 keeps the multidimensional code stable.
-
-\subsection{Online learning demonstration (H3)}
-
-Because training and inference use the same per-sample computation, the
-encoder can keep learning along the evaluation stream. Continued updates use
-the training step scaled by $10^{-3}$, selected on the validation stream, where
-they preserve accuracy ($96.51$\% versus $96.48$\% for the fixed encoder) and
-effective rank. On the held-out stream, the continually updated encoder reaches
-$96.50\pm0.15$\%, matching the fixed encoder ($96.48\pm0.15$\%), while its
-feedforward weights keep adapting ($\lVert\Delta W\rVert_2=0.047$).
 
 \subsection{Representations}
 
@@ -547,9 +528,7 @@ signal.
 
 The experiments use a label-ordered stream on MNIST. Video and sensor streams
 contain several time scales, and applying \TeReL{} to them is a natural next
-step. Continued online updates use a smaller step than initial training; local
-rules that adapt this step would let training and long-term inference coincide
-more fully. Finally, a layer of
+step. Finally, a layer of
 width $D$ uses $D^2$ lateral parameters, which may dominate very wide layers.
 Sparse, low-rank, or structured lateral matrices, as well as convolutional and
 recurrent architectures, are natural next steps for constrained hardware.
@@ -562,8 +541,7 @@ temporal losses. Detached running statistics and a lagged lateral matrix make
 the rule local in space and time, and its gradient takes the form of Hebbian
 feedforward and anti-Hebbian lateral updates driven by a signed neuron state.
 Trained with batch size one, \TeReL{} learns representations that improve on
-random features and classical SFA, and the same rule keeps
-learning online after training. \TeReL{} emphasizes locality and streaming
+random features and classical SFA. \TeReL{} emphasizes locality and streaming
 compatibility and therefore maps naturally to constrained hardware, while
 connecting regularized self-supervised learning to classical temporal ideas
 such as Slow Feature Analysis and trace learning.
