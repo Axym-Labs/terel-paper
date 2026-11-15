@@ -40,103 +40,154 @@ Local in Space and Time}
 
 \providecommand{\LeadFigurePath}{figures/terel-method-overview.pdf}
 \providecommand{\LeadFigureCaption}{%
-\TeReL{} in one layer. \textbf{a}, The temporal, variance, and covariance
-terms form a regularized target. \textbf{b}, Its residual and one pass through
-the lateral matrix define the neuron state. \textbf{c}, The state drives a
-Hebbian feedforward and an anti-Hebbian lateral update.}
+\textbf{One \TeReL{} update in one layer.} \textbf{a}, The temporal, variance,
+and covariance terms compare the current activation $z_t$ with the previous
+activation $p_t$, the running mean $\mu_t$ and variance gate $g_t$, and the
+lateral matrix $M_t$; their sum $r_t$ defines a regularized target
+$\widehat z_t$. \textbf{b}, The residual, restricted to active ReLU units and
+passed once through the lateral matrix, is the neuron state $s_t$.
+\textbf{c}, The state drives a Hebbian feedforward update
+($c=2\lambda_T/D$) and an anti-Hebbian lateral update. All stored quantities
+are detached, and no error signal passes between layers.}
 
 \begin{document}
 
 \makepublicationtitle
 
 \publicationabstract{%
-Layer-local self-supervised objectives remove the backward pass between
-layers, but almost all still compute their loss over a batch of samples and
-are therefore local in space but not in time. We introduce Temporal Regularized Learning (\TeReL{}),
-a spatially and temporally local learning rule for self-supervised
-representation learning from sequential input streams. The key idea is to
-instantiate a VICReg-style objective with temporally adjacent positives and
-non-differentiated running population statistics, yielding a per-neuron online
-loss with bounded state. The objective is a soft form of Slow Feature
-Analysis, and its gradient is a Hebbian update of the feedforward weights and
-an anti-Hebbian update of one lateral matrix per layer. The experiments
-show that the rule works in a small network. On a class-chunked MNIST stream, a two-layer fully
-connected network trained with batch size one outperforms random features
-($\FinalTeReLAccuracy$\% versus $95.09$\% linear-probe accuracy) and
-classical SFA, and a variant that relaxes both locality constraints is
-comparable to supervised backpropagation. More broadly, \TeReL{} shows that a modern
-self-supervised objective can be learned one sample at a time with purely local
-updates, bringing representation learning closer to what brains and
-neuromorphic hardware can implement.}
+Self-supervised objectives such as VICReg learn representations by making
+related inputs similar, while variance and covariance penalties prevent
+collapse. These penalties are statistics over a batch of samples, so
+layer-local variants, too, are typically local in space but not in time. We
+introduce Temporal Regularized Learning (\TeReL{}), which optimizes a
+VICReg-style objective one sample at a time with purely local updates: each
+weight update depends only on signals at its two neurons and their layer, the
+current input, and a fixed-size state. Temporally adjacent inputs serve
+as positive pairs, which makes the objective a soft form of Slow Feature
+Analysis (SFA). Running estimates of each neuron's mean and variance, together
+with one lateral matrix per layer, replace the batch statistics; held fixed
+during differentiation, they turn the gradient into a Hebbian feedforward
+update and an anti-Hebbian lateral update. We show that a
+two-layer network trained with batch size one on an MNIST stream of
+class-homogeneous chunks reaches $\FinalTeReLAccuracy$\% linear-probe
+accuracy, above random features ($95.09$\%) and classical SFA, and that the
+temporal order and each loss term contribute to this result. With both
+locality constraints relaxed, the same objective matches supervised
+backpropagation. \TeReL{} thus shows that the collapse-preventing statistics
+of modern self-supervised learning can be held as running state at each
+neuron, which brings these objectives closer to what brains and neuromorphic
+hardware can implement.}
 
 \publicationleadfigure[0.26\textheight]{\LeadFigurePath}{\LeadFigureCaption}
 \label{fig:overview}
 
 \section{Introduction}
 
-Learning from unlabeled sensory streams is a practical necessity for both
-biological modeling and energy-efficient machine learning on constrained
-hardware. Modern self-supervised methods succeed on unlabeled data by aligning
-representations of related samples (positives) while avoiding collapse using
-either negative samples or explicit regularizers. Contrastive methods rely on
-negatives and on large batch sizes to estimate cross-sample
-statistics~\cite{chen2020,oord2018}. Regularized alternatives avoid explicit
-negatives and instead combine an invariance term with variance and covariance
-penalties~\cite{bardes2022,zbontar2021}. VICReg is a regularized method that
-enforces invariance without negatives and whose regularizers can be computed
-from local moments, at least in a batched implementation~\cite{bardes2022}.
+Self-supervised learning trains an encoder without labels by making the
+representations of related inputs, called positives, similar. This invariance
+objective alone is minimized by a constant representation, so self-supervised
+methods add a mechanism that prevents collapse. Contrastive methods push the
+representations of unrelated inputs (negatives) apart and typically draw them
+from large batches~\cite{chen2020,oord2018}. VICReg and Barlow Twins instead
+regularize the statistics of the representation~\cite{bardes2022,zbontar2021}.
+VICReg combines three terms~\cite{bardes2022}: an invariance term, the mean
+squared distance between the embeddings of two augmented views of an input; a
+variance term, a hinge loss that keeps the standard deviation of each
+embedding dimension across the batch above a threshold; and a covariance term,
+the sum of the squared off-diagonal entries of the batch covariance matrix,
+which decorrelates the dimensions.
 
-Standard implementations of these objectives use credit assignment across
-neurons and layers. That usually requires an extensive memory of the state for
-backpropagation~\cite{rumelhart1986}, or iterative settling for predictive
-coding and equilibrium propagation~\cite{rao1999,scellier2017}, which conflicts
-with temporal locality. For this reason, we optimize the objective at each
-neuron of the network. This paper shows how a VICReg-style objective can be
-instantiated as a per-neuron temporal loss by using adjacent observations as
-positives and treating running population statistics as non-differentiated
-state. The motivation is practical: locality reduces communication between
-units, and temporal locality permits streaming implementations with only a
-small short-term memory per neuron. Both properties are desirable for analog
-and neuromorphic hardware~\cite{indiveri2015,davies2018}.
+Both regularizers are statistics over a batch, and the loss is minimized by
+backpropagation through all layers. The resulting updates are local neither
+in space, because a weight update depends on error signals from later layers,
+nor in time, because it depends on the other samples in the batch and on the
+activations stored for the backward pass~\cite{rumelhart1986}. Predictive
+coding and equilibrium propagation replace the backward pass by iterative
+settling over many steps per input~\cite{rao1999,scellier2017}. Layer-local
+self-supervised methods remove the backward pass between
+layers~\cite{lowe2019,xiong2020,illing2021,siddiqui2024,datta2025}, but most
+of them still compute their loss over a batch. Both kinds of locality suit
+analog and neuromorphic hardware: spatial locality reduces communication between
+units, and temporal locality permits streaming implementations with a small
+short-term memory per neuron~\cite{indiveri2015,davies2018}. Classical rules
+such as Hebbian learning~\cite{oja1982} and trace
+learning~\cite{foldiak1991}, and streaming variants of Slow Feature Analysis
+(SFA)~\cite{kompella2012,lipshutz2020}, learn one sample at a time but
+optimize simpler objectives. Variance and
+covariance regularization, a constraint on a population of samples, appears to
+require a batch.
 
-By making the invariance temporal, \TeReL{} is a type of Slow Feature Analysis
-(SFA) procedure: SFA aims to extract slowly changing features from a temporal
-sequence of faster-changing inputs~\cite{wiskott2002,foldiak1991}. This can
-lead to representations that are invariant to augmentations or capture latent
-variables. More broadly, many sequential domains contain latent factors that
-evolve more slowly than their raw observations. In text, the sentiment of a
-review remains stable across its many words; in finance, stock prices
-fluctuate faster than the market factors that drive them; in physiology, the
-underlying state or health condition of a patient evolves slowly relative to
-heartbeat, respiratory cycles, and momentary noise in sensor traces.
+We show that running state at each neuron can take the place of the batch.
+Temporal Regularized Learning (\TeReL{}) optimizes a VICReg-style objective one
+sample at a time with updates that are local in space and time. It makes three
+substitutions, each chosen to keep the update local. First, the positive of an
+input is the previous input in the stream rather than a second augmented view:
+a stream supplies such pairs without augmentation, and the invariance term
+becomes the slowness objective of SFA~\cite{wiskott2002}. Second, each neuron
+stores running estimates of its mean and variance in place of the batch
+moments, and these estimates are treated as constants during differentiation,
+because differentiating through them would require gradients through the
+entire history of the stream. Third, one lateral matrix per layer accumulates
+running products between pairs of its neurons and supplies a lagged
+decorrelation signal in place of the batch covariance. The output of each
+layer is detached before it enters the next layer, so no gradient crosses
+layers. \Cref{prop:causal-vicreg} shows that these stop-gradients keep a
+learning signal from the current input, so the rule needs no batch to learn.
 
-The per-neuron loss gives the learning rule a familiar form. Its gradient at
-the preactivation of a neuron is a signed state; the feedforward update is the
+With temporal positives, \TeReL{} is a form of SFA, which extracts slowly
+varying features from a sequence of faster-varying
+inputs~\cite{wiskott2002,foldiak1991}; where SFA imposes decorrelated,
+unit-variance features as a hard whitening constraint, \TeReL{} penalizes
+variance and covariance softly, as VICReg does. Slowness is a useful prior
+because many sequential domains contain latent factors that evolve more slowly
+than their raw observations. In text, the sentiment of a review remains stable
+across its many words; in finance, stock prices fluctuate faster than the
+market factors that drive them; in physiology, the health condition of a
+patient evolves slowly relative to heartbeat, respiratory cycles, and momentary
+noise in sensor traces.
+
+Because the loss of each neuron depends only on activations and stored state
+within its layer, its gradient takes a familiar form. The gradient at the preactivation of
+a neuron is a signed scalar, the neuron state. The feedforward update is the
 product of presynaptic activity and this state, and pairs of states drive an
-anti-Hebbian update of one same-layer matrix. Similarity-matching networks
-use the same form of Hebbian cross-layer and anti-Hebbian lateral learning for
-linear representations~\cite{pehlevan2015,pehlevan2018}. The key difference is
-the more complex state used here: the residual of a nonlinear target that
-balances slowness, variance, and decorrelation.
+anti-Hebbian update of the lateral matrix. Similarity-matching networks use the
+same form of Hebbian cross-layer and anti-Hebbian lateral learning for linear
+representations~\cite{pehlevan2015,pehlevan2018}. In \TeReL{}, the state is
+instead the residual of a nonlinear target that balances slowness, variance,
+and decorrelation.
+
+The experiments test two hypotheses on an MNIST stream ordered in
+class-homogeneous chunks. (H1) \TeReL{} trained with batch size one learns a
+representation that a linear classifier separates better than random features
+of the same architecture and better than classical SFA. (H2) The temporal order
+and each of the three loss terms contribute to this representation. The
+derivation predicts collapse without the variance term, because the
+invariance term alone admits a constant solution, and a shuffled stream
+removes the class information that adjacency carries.
 
 \paragraph{Contributions}
-This paper makes three contributions. First, it derives \TeReL{} from VICReg
-through an explicit instantiation choice: population statistics are maintained
-as non-differentiated state, while adjacent observations supply the positive
-pairs, and these stop-gradients retain the learning signal of the current
-observation. Second, it expresses the resulting gradient as a neuron-local
-rule with Hebbian feedforward and anti-Hebbian lateral updates, and clarifies
-\TeReL{} as a conceptual bridge between modern regularized self-supervised
-learning objectives and classical temporal representation learning ideas such
-as Slow Feature Analysis and trace learning~\cite{foldiak1991,oja1982}. Third,
-it evaluates \TeReL{} with batch size one under controlled temporal
-orderings against random, classical SFA, supervised, and
-relaxed-locality references, and reports ablations of each loss term.
+\begin{itemize}
+  \item We derive \TeReL{} from VICReg (\cref{prop:causal-vicreg}): temporally
+  adjacent positives, detached running statistics, and a lagged lateral
+  covariance make the loss of each neuron local in space and time while it
+  keeps a learning signal from the current input.
+  \item We express its gradient as a neuron-local rule: a Hebbian feedforward
+  update and an anti-Hebbian lateral update, both driven by one signed neuron
+  state, with three state variables per neuron and one $D\times D$ lateral
+  matrix per layer. The same derivation casts \TeReL{} as a soft form of SFA
+  and relates it to trace learning and similarity matching.
+  \item We show that, with batch size one, \TeReL{} reaches
+  $\FinalTeReLAccuracy$\% linear-probe accuracy on the MNIST stream, compared
+  with $95.09$\% for random features and $90.07$\% for batch SFA; that the same
+  objective with relaxed locality matches supervised backpropagation
+  ($\FinalOfflineAccuracy$\% versus $\FinalSupervisedAccuracy$\%); and that
+  removing the temporal order or any loss term degrades the representation.
+\end{itemize}
 
-The experiments test two hypotheses. (H1) Despite its locality constraints,
-\TeReL{} trained with batch size one learns a useful deep representation.
-(H2) The temporal order and each of the three loss terms contribute to this
-representation.
+Running state at each neuron can thus replace the batch statistics that
+prevent collapse in modern self-supervised learning, which makes these
+objectives available to learning rules that brains and neuromorphic hardware
+can implement.
 
 \section{Method}
 \label{sec:method}
@@ -170,9 +221,12 @@ belongs to the same sequence, and write $\bar z_t=z_t-\mu_t$ and
 $g_t=[\tau-v_t]_+$ for a variance target $\tau>0$.
 
 VICReg decomposes a representation-level objective into three terms
-(similarity/invariance, variance, covariance)~\cite{bardes2022}:
+(invariance, variance, covariance)~\cite{bardes2022}:
 $\mathcal L_{\mathrm{VICReg}}=\lambda_I\mathcal L_I+
-\lambda_V\mathcal L_V+\lambda_C\mathcal L_C$. We keep these roles but replace
+\lambda_V\mathcal L_V+\lambda_C\mathcal L_C$, where $\mathcal L_I$ compares
+the embeddings of two views and $\mathcal L_V$ and $\mathcal L_C$ are
+functions of the standard deviation and covariance of the embedding
+dimensions over a batch. We keep these roles but replace
 the second view by the previous activation $p_t$, batch moments by the
 detached running statistics $\mu_t,v_t$, and the differentiated batch
 covariance by the lagged operator $A_t=\offdiag(M_t)$:
@@ -185,14 +239,16 @@ covariance by the lagged operator $A_t=\offdiag(M_t)$:
 \label{eq:local-losses}
 \end{equation}
 The layer minimizes $\ell=\lambda_T\ell_T+\lambda_V\ell_V+\lambda_C\ell_C$
-with $\lambda_T>0$. The temporal coherence term makes consecutive activations
+with $\lambda_T>0$. The temporal term makes consecutive activations
 similar; in discrete time it is the squared first derivative of the
-activations that SFA minimizes. The variance term increases the coordinates
-whose stored variance lies below $\tau$, and the covariance term applies a
-lagged same-layer decorrelation signal. \TeReL{} is therefore a causal
-surrogate of the VICReg decomposition, not a re-expression of its batch
-objective: $\ell_V$ is a gated instantaneous expansion term, and $A_t$ is a
-lagged proxy for the covariance gradient.
+activations that SFA minimizes. On its own it is minimized by a constant
+output, as the invariance term of VICReg is. The variance term rules out this
+solution by expanding the coordinates whose stored variance lies below $\tau$,
+and the covariance term applies a lagged same-layer decorrelation signal.
+\TeReL{} is a causal surrogate of the VICReg decomposition that keeps the
+role of each term: $\ell_V$ is a gated instantaneous expansion term, and $A_t$
+is a lagged proxy for the covariance gradient. \Cref{sec:results} tests the
+contribution of each term.
 
 \begin{proposition}[A stop-gradient VICReg instantiation is temporally local]
 \label{prop:causal-vicreg}
@@ -229,8 +285,8 @@ $\widehat z_t=\stopgrad(z_t-r_t)$: updates move $z_t$ toward the previous
 activation, away from the running mean where the stored variance is below
 $\tau$, and against correlated activity. The local loss
 $\lambda_T\lVert z_t-\widehat z_t\rVert_2^2/D$ has the same gradient with
-respect to $z_t$ as $\ell$. This target is formed within the layer; it is not
-an external target.
+respect to $z_t$ as $\ell$. The layer forms this target from its own
+activation and state, without an external teacher signal.
 
 Expressed at the input side of the nonlinearity, the residual becomes
 $b_t=J_{\phi,t}^{\top}r_t$. For the ReLU encoders used in the experiments,
@@ -245,11 +301,10 @@ matrix gives the postsynaptic neuron state
   \label{eq:state-correction}
 \end{equation}
 with correction step $\eta>0$ and strength $\kappa\geq0$. This is a single
-matrix--vector product, not an iterative settling procedure.
+matrix--vector product per observation, without iterative settling.
 
-As in the general case, the weight update can be implemented in a Hebbian
-style, as the product of the input and an output-related term. With learning
-rate $\alpha$ and weight decay $\lambda_W$,
+The feedforward update is Hebbian: the product of the input and a
+postsynaptic term. With learning rate $\alpha$ and weight decay $\lambda_W$,
 \begin{equation}
   W_{t+1}=(1-\alpha\lambda_W)W_t
   -\alpha\frac{2\lambda_T}{D}s_tx_t^\top,
@@ -293,20 +348,18 @@ activation, a running mean, and a running variance,
 This state can be stored at the neuron level. The running statistics, the
 lateral matrix \cref{eq:lateral-update}, and the feedforward weights
 \cref{eq:weight-update} are all leaky integrators (exponential moving
-averages); an RC circuit could, in principle, implement such leaky
-integrators. At a sequence boundary only the validity of $p_t$ is cleared.
+averages), the operation an RC circuit performs in analog hardware. At a
+sequence boundary only the validity of $p_t$ is cleared.
 A layer of width $D$ thus stores $3D$ dynamic scalars and $D^2$ auxiliary
 lateral parameters besides its feedforward weights; plain SGD adds no
 optimizer state. For the $784$--$512$--$256$ MNIST encoder these are $2{,}304$
 dynamic scalars, $327{,}680$ lateral parameters, and $533{,}248$ feedforward
 parameters.
 
-\TeReL{} does not attempt to approximate global backpropagation across long
-paths in the network. Because the learning objective is local in space and
-time, the method also does not accumulate approximation error with depth in
-the way that methods approximating global gradients do. Each layer completes
-its forward pass, target, state correction, and updates for observation $t$ in
-one feedforward schedule.
+Each layer optimizes its own objective, so \TeReL{} has no global gradient
+to approximate and no approximation error that compounds with depth. Each
+layer completes its forward pass, target, state correction, and updates for
+observation $t$ in one feedforward schedule.
 
 \subsection{\TeReLOffline{}}
 
@@ -314,124 +367,115 @@ one feedforward schedule.
 subsequence of the data stream. A subsequence enters a ReLU multilayer
 perceptron, the same three-term objective is evaluated at its final layer, and
 backpropagation differentiates it through all layers and observations of the
-subsequence. It is optimized with plain SGD and serves as a performance
-reference for the objective, not as an alternative definition of \TeReL{}.
+subsequence. It isolates the objective from the locality constraints and
+is its performance reference.
 
 \section{Related work}
 \label{sec:related}
 
-\TeReL{} occupies a point in design space at the intersection of
-self-supervised and local learning procedures. We summarize the most direct
-comparisons as follows:
-\begin{itemize}
-  \item \textbf{Contrastive SSL:} Compared to methods that rely on negative
-  samples, \TeReL{} requires only temporally adjacent positives and
-  regularizers to avoid collapse~\cite{chen2020,oord2018}.
-  \item \textbf{VICReg and Barlow Twins:} \TeReL{} moves the variance and
-  covariance regularization to the neuron level and substitutes temporally
-  adjacent positives for augmented pairs~\cite{bardes2022,zbontar2021}.
-  \item \textbf{Layerwise SSL:} Layer-local and blockwise objectives remove
-  the backward path between network modules~\cite{lowe2019,xiong2020,illing2021,siddiqui2024},
-  and VICReg losses have been applied at successive
-  layers~\cite{datta2025}. \TeReL{} differs by additionally targeting temporal
-  locality and online implementability: it supplies the three signals causally
-  along time and factors them into neuron-local updates.
-  \item \textbf{Similarity matching:} Hebbian/anti-Hebbian networks derived
-  from similarity-matching objectives have the same synaptic
-  form~\cite{pehlevan2015,pehlevan2018}; \TeReL{} replaces their linear
-  postsynaptic factor by the residual of a nonlinear regularized target.
-  \item \textbf{Forward-Forward:} \TeReL{} and Forward-Forward both use local,
-  layerwise objectives to avoid end-to-end backpropagation through deep
-  networks. \TeReL{} uses an invariance objective rather than a goodness
-  signal and does not require constructed positive and negative
-  passes~\cite{hinton2022}.
-  \item \textbf{Equilibrium propagation and predictive coding:} These rely on
-  iterative relaxation, and equilibrium propagation on a free and a nudged
-  phase, whereas \TeReL{} uses a single-pass, per-neuron objective with
-  bounded local state~\cite{scellier2017,rao1999,lecun2006}.
-\end{itemize}
-Vectors and matrices that are computed from parameters or activations but held
-constant with respect to the parameters being optimized are common in training
-objectives, such as weight-averaged teacher parameters~\cite{tarvainen2017},
-stop-gradient targets~\cite{grill2020,chenhe2021}, predictions of an earlier
+\TeReL{} lies at the intersection of self-supervised learning and local
+learning rules. Among self-supervised objectives, contrastive methods prevent
+collapse with negative samples~\cite{chen2020,oord2018}; \TeReL{}
+requires only temporally adjacent positives and regularizers. VICReg and
+Barlow Twins regularize batch statistics of the
+representation~\cite{bardes2022,zbontar2021}; \TeReL{} moves the variance and
+covariance regularization to running state at each neuron and replaces
+augmented pairs by temporally adjacent ones. Many training objectives use
+quantities that are computed from parameters or activations but held constant
+with respect to the parameters being optimized, such as weight-averaged
+teacher parameters~\cite{tarvainen2017}, stop-gradient
+targets~\cite{grill2020,chenhe2021}, predictions of an earlier
 model~\cite{li2016}, and importance matrices in continual
-learning~\cite{kirkpatrick2017,wiest2026iewc}. \TeReL{} relies on this design
-pattern through its running variance and covariance estimates.
+learning~\cite{kirkpatrick2017,wiest2026iewc}. \TeReL{} uses this pattern for
+its running variance and covariance estimates.
+
+Among local learning methods, layer-local and blockwise objectives remove the
+backward path between network
+modules~\cite{lowe2019,xiong2020,illing2021,siddiqui2024}, and VICReg losses
+have been applied at successive layers~\cite{datta2025}. \TeReL{} in addition
+makes the update local in time: it supplies the three signals causally along
+time and factors them into neuron-local updates. Forward-Forward also trains each
+layer with a local objective to avoid end-to-end
+backpropagation~\cite{hinton2022}; \TeReL{} uses an invariance objective
+instead of a goodness signal and needs no constructed positive and negative
+passes. Equilibrium propagation and predictive coding rely on iterative
+relaxation, and equilibrium propagation on a free and a nudged
+phase~\cite{scellier2017,rao1999,lecun2006}, whereas \TeReL{} uses one
+feedforward pass per observation with bounded neuron state.
+Hebbian/anti-Hebbian networks derived from similarity-matching objectives have
+the same synaptic form as \TeReL{}~\cite{pehlevan2015,pehlevan2018}, and
+anti-Hebbian lateral connections decorrelate the units of classical sparse
+coding networks~\cite{foldiak1990}. \TeReL{} replaces the linear postsynaptic
+factor of similarity matching by the residual of a nonlinear regularized
+target.
 
 \paragraph{Relation to slow feature analysis and trace learning}
-\TeReL{} can be seen as a regularized, modernized trace-learning/SFA-style
-procedure in which temporal adjacency provides the positive pairs. The MSE
-between two contiguous samples is exactly the first derivative of activations
-in discrete time that is squared and minimized in SFA, and the whitening
-constraint of SFA maps to the variance and covariance
-regularizers~\cite{wiskott2002}. In the classification experiments, the
-faster-changing inputs are the individual samples, while the slower feature is
-the class membership of all samples within a chunk. Incremental SFA adapts the
-linear construction to streams but retains a whitening stage and linear
-feature extraction~\cite{kompella2012}. \TeReL{} is also closely related to
-Bio-SFA, a biologically plausible SFA algorithm. Bio-SFA works with a hard
-whitening constraint and uses iterative settling, whereas \TeReL{} penalizes
-covariance softly and its training is a series of discrete-time
-passes~\cite{lipshutz2020}.
+\TeReL{} is a regularized form of SFA in which temporal adjacency provides
+the positive pairs, and it shares the goal of temporal invariance with trace
+learning. The squared distance between
+two consecutive activations is the squared discrete-time first derivative
+that SFA minimizes, and the whitening constraint of SFA corresponds to the
+variance and covariance regularizers~\cite{wiskott2002}. Incremental SFA
+adapts the linear construction to streams but retains a whitening stage and
+linear feature extraction~\cite{kompella2012}. Bio-SFA, a biologically
+plausible SFA algorithm, imposes a hard whitening constraint and uses
+iterative settling~\cite{lipshutz2020}, whereas \TeReL{} penalizes covariance
+softly and trains through a series of discrete-time passes.
 
-Trace learning is a simple, biologically plausible procedure that modifies
-Hebbian updates by introducing a temporal aspect: instead of a neuron's
-activation, it uses an activation trace~\cite{foldiak1991,stringer2002}.
-Trace learning and \TeReL{} share the operational goal of promoting temporal
-invariance but do so in different ways. Ignoring shared factors, the temporal
-term of \TeReL{} induces $\Delta w_{kj}\propto x_k(z_{t-1,j}-z_{t,j})$, while
-trace learning uses $\Delta w_{kj}\propto x_k(\beta\bar z_{t-1,j}+(1-\beta)z_{t,j})$
-with $\beta\in(0,1)$. No choice of $\beta$ makes the two updates identical,
-because matching them would require both $\beta=1$ and $1-\beta=-1$. The trace
-rule furthermore requires a weight-dependent decay term to prevent runaway
-effects~\cite{foldiak1990}.
-
-More broadly, \TeReL{} opens a bridge between modern self-supervised learning
-and classical local learning rules by showing how regularized objectives can
-be expressed in strictly local, online-compatible form. Our ablations show
-that the variance and decorrelation regularizers are both necessary to avoid
-collapse or divergence. This suggests that trace-learning and SFA-style rules
-may likewise benefit from explicit variance control and decorrelation, even if
-their core temporal objective remains unchanged.
+Trace learning modifies Hebbian updates by replacing the activation of a
+neuron with a temporal trace of it~\cite{foldiak1991,stringer2002}. The two
+rules differ in their updates. Ignoring shared factors, the temporal term of \TeReL{} induces
+$\Delta w_{kj}\propto x_k(z_{t-1,j}-z_{t,j})$, while trace learning uses
+$\Delta w_{kj}\propto x_k(\beta\bar z_{t-1,j}+(1-\beta)z_{t,j})$ with
+$\beta\in(0,1)$. No choice of $\beta$ makes the two updates identical, because
+matching them would require both $\beta=1$ and $1-\beta=-1$. The trace rule
+also requires a weight-dependent decay term to keep the weights
+bounded~\cite{foldiak1991}. In \TeReL{}, the ablations show that the variance
+and covariance terms are both necessary to avoid collapse or divergence
+(\cref{sec:results}), which makes explicit variance control and
+decorrelation a candidate addition to trace-learning rules.
 
 \section{Experimental protocol}
 \label{sec:experiments}
 
-We evaluate \TeReL{} on MNIST~\cite{lecun1998} with
-synthetic sequential coherence. \TeReL{}'s objective is strictly
-representational and uses no supervision. However, the order of the data
-stream can induce relatively arbitrary pairs of positives. For example, placing
-data of the same category next to each other mirrors a supervised contrastive
-setup. We use this order: the stream consists of randomly permuted
-class-homogeneous chunks of 16 samples, separated by sequence boundaries. The
-labels determine adjacency but do not enter the target or either update. As
-noted by Hinton for the supervised Forward-Forward setup, the network should
-then preferentially learn features that support discrimination between
+We evaluate \TeReL{} on MNIST~\cite{lecun1998} presented as a stream. \TeReL{}
+uses no labels: its positives are whichever inputs the stream places next to
+each other, so the stream order determines what the representation becomes
+invariant to. We order the stream so that adjacency carries class
+information: it consists of randomly permuted class-homogeneous chunks of 16
+samples, separated by sequence boundaries. The individual images are then the
+fast-varying inputs, and the class shared within a chunk is the slow feature.
+The labels determine adjacency but enter neither the target nor any update. As
+Hinton notes for the supervised Forward-Forward setup, the network should then
+preferentially learn features that discriminate between
 classes~\cite{hinton2022}.
 
-The encoder is a ReLU multilayer perceptron with hidden widths 512 and 256.
-\TeReL{} is trained with batch size one and plain SGD for two passes over the
-encoder-training samples. The downstream evaluation trains a linear classifier
-on the standardized concatenated activations of both layers of the encoder-training samples
-and evaluates it on held-out data. We reserve a stratified subset of the
-official training data (10{,}000 images) for all
-model selection; the official test split is used only for the final
-comparison. Reported values are means and sample standard deviations over five
-initializations, and paired comparisons use 95\% Student-$t$ intervals.
-All trained models, including the linear classifier and the references, use
-plain SGD; batch size is part of each method. Hyperparameters and raw values
-appear in \cref{app:protocol}.
+The encoder is a fully connected ReLU network with hidden widths 512 and 256.
+As in the Forward-Forward experiments~\cite{hinton2022}, the networks use no
+weight sharing: a shared weight would receive the sum of updates from many
+neurons, so its update would no longer be local to one synapse. \TeReL{} is
+trained with batch size one for two passes over the encoder-training samples.
+A linear classifier, trained on the standardized concatenated activations of
+both layers for the encoder-training samples, measures representation quality
+on held-out data. A stratified subset of the official training data (10{,}000
+images) is reserved for all model selection, and the official test split is
+used only for the final comparison. Reported values are means and sample
+standard deviations over five initializations, and paired comparisons use 95\%
+Student-$t$ intervals. All trained models, including the linear classifier and
+the references, use plain SGD; batch size is part of each method.
+Hyperparameters and raw values appear in \cref{app:protocol}.
 
-The references expose distinct relaxations. \TeReLOffline{} uses the same
+The references relax different constraints. \TeReLOffline{} uses the same
 architecture and objective with subsequences of 128 and end-to-end
 backpropagation. A layer-local network trained with a supervised contrastive
-objective~\cite{khosla2020} (Layer-local SupCon) uses labels, minibatches,
-and batch normalization at every layer. A supervised offline network is
-trained end to end with labels and backpropagation. A random ReLU encoder of the same shape, a
-linear probe on the input, and batch and incremental SFA~\cite{wiskott2002,kompella2012}
-complete the comparison. The methods differ in their intrinsic data and
-optimization requirements, so the comparison reports representation quality
-rather than equal compute.
+objective~\cite{khosla2020} (Layer-local SupCon) uses labels, minibatches, and
+batch normalization at every layer. A supervised offline network is trained
+end to end with labels and backpropagation. A random ReLU encoder of the same
+shape, a linear probe on the input, and batch and incremental
+SFA~\cite{wiskott2002,kompella2012} complete the comparison. Because the
+methods differ in their data and optimization requirements
+(\cref{tab:configuration}), the comparison measures representation quality at
+each method's own budget rather than at equal compute.
 
 Four ablations examine \TeReL{} itself: shuffling the stream, and setting the
 temporal, variance, or covariance coefficient to zero.
@@ -439,51 +483,50 @@ temporal, variance, or covariance coefficient to zero.
 \section{Results}
 \label{sec:results}
 
-The aim of the experiments is to show that \TeReL{} works in relatively small
-networks under its locality constraints, not to compete with architectures
-that rely on global credit assignment. As in the Forward-Forward
-experiments~\cite{hinton2022}, we therefore use networks without weight
-sharing. A shared weight would receive the sum of updates from many neurons,
-so its update would no longer be local to one synapse.
-
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{figures/performance-mechanisms.pdf}
-  \caption{\textbf{Representation quality and paired temporal effects on
-  MNIST.} \textbf{a}, Held-out linear-probe accuracy (mean and sample standard
-  deviation). \textbf{b}, Paired accuracy changes relative to \TeReL{}, with 95\%
-  Student-$t$ intervals.}
+  \caption{\textbf{Representation quality and temporal effects on MNIST.}
+  \textbf{a}, Held-out linear-probe accuracy of each encoder (mean and sample
+  standard deviation). \TeReL{}, trained with batch size one and local
+  updates, lies above the random encoder and both SFA variants; \TeReLOffline{},
+  the same objective without locality constraints, lies at the level of the
+  supervised offline network. \textbf{b}, Paired accuracy change relative to
+  \TeReL{} when the stream is shuffled or the temporal term is removed, with
+  95\% Student-$t$ intervals; both lower accuracy.}
   \label{fig:performance}
 \end{figure}
 
 \subsection{Representation quality (H1)}
 
-\TeReL{} reaches $\FinalTeReLAccuracy\pm\FinalTeReLSD$\% held-out accuracy
-on MNIST (\cref{fig:performance}a). The random encoder reaches
+With batch size one and no gradient between layers, \TeReL{} reaches
+$\FinalTeReLAccuracy\pm\FinalTeReLSD$\% held-out accuracy on MNIST
+(\cref{fig:performance}a). The random encoder reaches
 $95.09\pm0.23$\%, a paired gain of 1.39 percentage points $[1.04,1.74]$, and
 the gain over a linear probe on the input is 3.94 points $[3.76,4.12]$. Batch
 and incremental SFA reach $90.07\pm0.26$\% and $89.98\pm0.09$\%. Layer-local
-SupCon reaches $\FinalSupConAccuracy\pm\FinalSupConSD$\%, 0.48 points $[0.10,0.85]$ above
-\TeReL{}, with labels and minibatches at every layer. \TeReLOffline{} reaches
+SupCon, which uses labels and minibatches at every layer, reaches
+$\FinalSupConAccuracy\pm\FinalSupConSD$\%, 0.48 points $[0.10,0.85]$ above
+\TeReL{}. \TeReLOffline{} reaches
 $\FinalOfflineAccuracy\pm\FinalOfflineSD$\%, on par with the fully supervised
 offline network at $\FinalSupervisedAccuracy\pm\FinalSupervisedSD$\% (paired
-difference $-0.03$ points $[-0.19,0.13]$). The
-objective itself therefore supports supervised-level accuracy when
+difference $-0.03$ points $[-0.19,0.13]$). The objective itself therefore
+supports supervised-level accuracy when
 cross-layer and cross-time optimization are available; the gap to \TeReL{} is
 the cost of the locality constraints.
 
 \subsection{Temporal order and loss terms (H2)}
 
 Removing the temporal order or any single loss term degrades the
-representation (\cref{fig:performance}b). Shuffling the stream lowers accuracy by 1.08 paired
-points $[0.75,1.40]$, and removing the temporal term lowers it by 1.50 points
+representation (\cref{fig:performance}b). Shuffling the stream lowers accuracy
+by 1.08 paired points $[0.75,1.40]$, and removing the temporal term lowers it by 1.50 points
 $[1.33,1.67]$. Without the variance term, the representation collapses: the
 median feature variance falls to about $1.4\times10^{-5}$ and accuracy to
 $15.36\pm0.27$\%. Without the covariance term, training diverges for all five
-initializations before a representation can be measured. As in
-VICReg~\cite{bardes2022}, the invariance term alone admits trivial solutions;
-the variance term prevents a constant representation, and the covariance term
-keeps the multidimensional code stable.
+initializations before a representation can be measured. These outcomes
+match the roles derived in \cref{sec:method}: as in VICReg~\cite{bardes2022},
+the invariance term alone admits a constant solution, which the variance term
+prevents, and the covariance term keeps the multidimensional code stable.
 
 \subsection{Representations}
 
@@ -494,12 +537,14 @@ keeps the multidimensional code stable.
   \textbf{a}, Laplacian embedding of validation features of both layers;
   colors denote digits and are used only for visualization. \textbf{b},
   Fraction of same-class neighbors in the complete 768-dimensional
-  representation. The dotted line is the chance level.}
+  representation. The dotted line is the chance level. Most nearest neighbors
+  share the digit, and the fraction stays far above chance up to 50
+  neighbors.}
   \label{fig:geometry}
 \end{figure}
 
-We probe whether \TeReL{} yields class-structured latent codes suitable for a
-simple linear readout. The Laplacian embedding in \cref{fig:geometry}a shows
+The \TeReL{} representation is organized by class, which suits a linear
+readout. The Laplacian embedding in \cref{fig:geometry}a shows
 class-consistent branches rather than a single collapsed mass. Because a
 two-dimensional projection can distort neighborhoods, \cref{fig:geometry}b
 measures the same relation in the complete representation: the nearest
@@ -507,44 +552,45 @@ neighbor shares the digit for $89.9$\% of observations, and the fraction
 remains $79.7$\% across 20 neighbors and $71.7$\% across 50, compared with a
 $10.0$\% chance level.
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.88\linewidth]{figures/neuron-state-behavior.pdf}
-  \caption{\textbf{Signed postsynaptic state.} \textbf{a}, State trajectories
-  of four randomly selected second-layer neurons over the same interval of the
-  validation stream. \textbf{b}, Their state distributions over the complete
-  validation stream; black bars mark medians.}
+  \caption{\textbf{Signed neuron state of \TeReL{}.} \textbf{a}, State
+  trajectories of four randomly selected second-layer neurons over the same
+  interval of the validation stream. \textbf{b}, Their state distributions
+  over the complete validation stream; black bars mark medians. Each state
+  takes both signs, so it drives both potentiation and depression of the
+  feedforward synapses.}
   \label{fig:state}
 \end{figure}
 
-\Cref{fig:state} shows \TeReL{}'s neuron state $s_t$, the quantity that multiplies
+\Cref{fig:state} shows the neuron state $s_t$, the quantity that multiplies
 presynaptic activity in \cref{eq:weight-update}. The selected neurons
 alternate between positive and negative values, so the state drives both
-potentiation and depression. Their scales differ substantially: some neurons
-respond through sparse excursions, whereas another carries a broader signed
-signal.
+potentiation and depression. Their scales differ: some neurons respond through
+sparse excursions, whereas another carries a broader signed signal.
 
 \section{Limitations and future work}
 
-The experiments use a label-ordered stream on MNIST. Video and sensor streams
-contain several time scales, and applying \TeReL{} to them is a natural next
-step. Finally, a layer of
-width $D$ uses $D^2$ lateral parameters, which may dominate very wide layers.
-Sparse, low-rank, or structured lateral matrices, as well as convolutional and
-recurrent architectures, are natural next steps for constrained hardware.
+The experiments use MNIST streams whose chunks are ordered by class. Video and
+sensor streams contain several time scales, and applying \TeReL{} to them is a
+natural next step. A layer of width $D$ stores $D^2$ lateral parameters, which
+exceed the feedforward parameters when a layer is wider than its input; sparse, low-rank, or
+structured lateral matrices reduce this cost and suit constrained hardware.
 
-\section{Conclusion and outlook}
+\section{Conclusion}
 
-We presented Temporal Regularized Learning, an approach that adapts the
-invariance, variance, and covariance regularizers of VICReg to neuron-level
-temporal losses. Detached running statistics and a lagged lateral matrix make
-the rule local in space and time, and its gradient takes the form of Hebbian
-feedforward and anti-Hebbian lateral updates driven by a signed neuron state.
-Trained with batch size one, \TeReL{} learns representations that improve on
-random features and classical SFA. \TeReL{} emphasizes locality and streaming
-compatibility and therefore maps naturally to constrained hardware, while
-connecting regularized self-supervised learning to classical temporal ideas
-such as Slow Feature Analysis and trace learning.
+Temporal Regularized Learning optimizes a VICReg-style objective one sample at
+a time with updates that are local in space and time. Temporally adjacent
+inputs supply the positives, detached running statistics and a lagged lateral
+matrix supply the variance and covariance signals, and the gradient takes the
+form of Hebbian feedforward and anti-Hebbian lateral updates driven by a signed
+neuron state. Trained with batch size one, \TeReL{} learns representations that
+improve on random features and classical SFA, and with its locality
+constraints relaxed, the same objective matches supervised backpropagation.
+\TeReL{} connects regularized self-supervised learning to Slow Feature Analysis
+and trace learning, and because it learns from a stream with fixed-size state
+at each neuron, it maps naturally to constrained hardware.
 
 \section*{AI Use Statement}
 
