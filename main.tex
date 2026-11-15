@@ -61,8 +61,8 @@ collapse. These penalties are statistics over a batch of samples, so
 layer-local variants, too, are typically local in space but not in time. We
 introduce Temporal Regularized Learning (\TeReL{}), which optimizes a
 VICReg-style objective one sample at a time with purely local updates: each
-weight update depends only on signals at its two neurons and their layer, the
-current input, and a fixed-size state. Temporally adjacent inputs serve
+update uses only the current activity of its own and the preceding layer and a
+fixed-size running state. Temporally adjacent inputs serve
 as positive pairs, which makes the objective a soft form of Slow Feature
 Analysis (SFA). Running estimates of each neuron's mean and variance, together
 with one lateral matrix per layer, replace the batch statistics; held fixed
