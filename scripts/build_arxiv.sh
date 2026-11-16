@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 out=dist/arxiv
 rm -rf "$out" dist/terel-arxiv.zip
 mkdir -p "$out/figures"
-tectonic -X compile --keep-intermediates main.tex
+scripts/pdflatex.sh main.tex
 cp main.tex main.bbl axym-publication.sty axym-links.sty "$out"/
 cp -r axym-emoji "$out"/
 cp figures/terel-method-overview.pdf figures/performance-mechanisms.pdf \

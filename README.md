@@ -15,18 +15,17 @@ spatially and temporally relaxed reference, reaches 98.39 ± 0.04%. Continued
 unlabeled updates with a validation-selected step preserve the representation
 at 96.43 ± 0.15% using the same fitted probe.
 
-Build the paper twice to resolve references:
+Build the paper with pdflatex, the arXiv engine (`scripts/pdflatex.sh` runs
+pdflatex, BibTeX and the reruns in the `axym-latex-html` Docker image):
 
 ```bash
-SOURCE_DATE_EPOCH=1786317315 FORCE_SOURCE_DATE=1 tectonic main.tex
-SOURCE_DATE_EPOCH=1786317315 FORCE_SOURCE_DATE=1 tectonic main.tex
+scripts/pdflatex.sh main.tex
 ```
 
 Regenerate the native-LaTeX method figure with:
 
 ```bash
-SOURCE_DATE_EPOCH=1786317315 FORCE_SOURCE_DATE=1 \
-  tectonic figures/terel-method-overview.tex --outdir figures
+scripts/pdflatex.sh terel-method-overview.tex figures
 ```
 
 The remaining figures have self-contained scripts in `figures/` and read only
