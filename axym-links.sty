@@ -1,0 +1,74 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{axym-links}[2026/11/16 Axym paper links line]
+
+% Load after hyperref. Used by axym-publication.sty and usable on its own in
+% papers with another style (e.g. arxiv.sty).
+\RequirePackage{graphicx}
+\RequirePackage{hyperref}
+
+% External links, printed as one centered line by \makepublicationlinks.
+% Every entry is optional and empty entries are omitted. The optional argument
+% replaces the visible label. Symbols follow common practice on recent ML
+% papers: Hugging Face emoji for models and data hosted there (floppy disk
+% elsewhere), GitHub mark for code on GitHub (laptop elsewhere), house for the
+% project page, envelope for correspondence.
+\newcommand{\publicationmodels}[2][Models]{%
+  \def\PublicationModelsLabel{#1}\def\PublicationModels{#2}}
+\newcommand{\publicationdata}[2][Data]{%
+  \def\PublicationDataLabel{#1}\def\PublicationData{#2}}
+\newcommand{\publicationcode}[2][Code]{%
+  \def\PublicationCodeLabel{#1}\def\PublicationCode{#2}}
+\newcommand{\publicationprojectpage}[2][Project page]{%
+  \def\PublicationProjectPageLabel{#1}\def\PublicationProjectPage{#2}}
+\newcommand{\publicationcorrespondence}[1]{\def\PublicationCorrespondence{#1}}
+
+\publicationmodels{}
+\publicationdata{}
+\publicationcode{}
+\publicationprojectpage{}
+\publicationcorrespondence{}
+
+% Symbols are images in axym-emoji/, next to this package: Noto Emoji graphics
+% (Apache License 2.0) and the GitHub mark from Simple Icons (CC0). Images work
+% with every TeX engine.
+\providecommand{\AxymEmojiPath}{axym-emoji/}
+\newcommand{\axym@emoji}[1]{%
+  \raisebox{-0.2em}{\includegraphics[height=1.1em]{\AxymEmojiPath#1}}}
+\newcommand{\axym@hostemoji}[4]{% url, host, emoji if host matches, fallback
+  \edef\axym@test{\noexpand\in@{\detokenize{#2}}{\detokenize{#1}}}%
+  \axym@test
+  \ifin@\axym@emoji{#3}\else\axym@emoji{#4}\fi}
+\newif\ifaxym@firstlink
+\newif\ifaxym@anylink
+\newcommand{\axym@linkentry}[3]{% emoji, url, label
+  \ifaxym@firstlink\axym@firstlinkfalse\else\hspace{1.5em plus 0.5em}\fi
+  \mbox{\href{#2}{#1\,#3}}}
+\newcommand{\makepublicationlinks}{%
+  \axym@anylinkfalse
+  \ifx\PublicationModels\empty\else\axym@anylinktrue\fi
+  \ifx\PublicationData\empty\else\axym@anylinktrue\fi
+  \ifx\PublicationCode\empty\else\axym@anylinktrue\fi
+  \ifx\PublicationProjectPage\empty\else\axym@anylinktrue\fi
+  \ifx\PublicationCorrespondence\empty\else\axym@anylinktrue\fi
+  \ifaxym@anylink
+    \par\vspace{0.75em}%
+    {\centering\fontsize{10pt}{12pt}\selectfont\axym@firstlinktrue
+     \ifx\PublicationModels\empty\else
+       \axym@linkentry{\expandafter\axym@hostemoji\expandafter{\PublicationModels}{huggingface.co}{huggingface}{data}}%
+         {\PublicationModels}{\PublicationModelsLabel}\fi
+     \ifx\PublicationData\empty\else
+       \axym@linkentry{\expandafter\axym@hostemoji\expandafter{\PublicationData}{huggingface.co}{huggingface}{data}}%
+         {\PublicationData}{\PublicationDataLabel}\fi
+     \ifx\PublicationCode\empty\else
+       \axym@linkentry{\expandafter\axym@hostemoji\expandafter{\PublicationCode}{github.com}{github}{code}}%
+         {\PublicationCode}{\PublicationCodeLabel}\fi
+     \ifx\PublicationProjectPage\empty\else
+       \axym@linkentry{\axym@emoji{home}}%
+         {\PublicationProjectPage}{\PublicationProjectPageLabel}\fi
+     \ifx\PublicationCorrespondence\empty\else
+       \axym@linkentry{\axym@emoji{email}}%
+         {mailto:\PublicationCorrespondence}{\nolinkurl{\PublicationCorrespondence}}\fi
+     \par}%
+    \vspace{0.4em}%
+  \fi
+}

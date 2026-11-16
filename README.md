@@ -47,3 +47,6 @@ python figures/neuron-state-behavior.py \
 The manuscript contains only the final method, exact evaluation protocol, raw
 reported values, and scientifically relevant controls. Execution commits and
 checksums are kept in the code artifact's `ARTIFACT_README.md`.
+
+Build the arXiv source package (`dist/terel-arxiv.zip`, with the shipped
+`main.bbl`) with `scripts/build_arxiv.sh`.
